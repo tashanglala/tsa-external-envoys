@@ -1,0 +1,3299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The External Envoys — TechSystems Association</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Cinzel:wght@500;600;700;800&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<!-- Firebase Authentication + Firestore + Storage are initialized in the app script below. -->
+<style>
+  :root{
+    /* Dark obsidian canvas & surface layers - eye-comfort, no harsh muddy brown */
+    --night:#0b0e14;
+    --night-alt:#0f131c;
+    --surface:#121722;
+    --surface-card:#161c2a;
+    --surface-card-hover:#1e2638;
+    --surface-glass:rgba(22,28,42,0.85);
+
+    /* Refined champagne & luminary gold */
+    --gold:#dfb85a;
+    --gold-light:#f3e2af;
+    --gold-dark:#967424;
+    --gold-glow:rgba(223,184,90,0.22);
+    --gold-border:rgba(223,184,90,0.18);
+    --gold-border-strong:rgba(223,184,90,0.42);
+
+    /* High-contrast, gentle text hierarchy (WCAG AAA/AA compliant) */
+    --parchment:#f8fafc;
+    --parchment-body:#d8dfeb;
+    --text-muted:#94a3b8;
+    --text-dim:#64748b;
+    --ink:#0b0e14;
+
+    /* Functional accents */
+    --ember:#f97316;
+    --moss:#22c55e;
+    --sapphire:#38bdf8;
+    --ruby:#f87171;
+    --wood:#2a2219;
+    --stone:#94a3b8;
+    --stone-dark:#1e2430;
+
+    /* Dashboard palette mapped cleanly */
+    --pro-bg:#0b0e14;
+    --pro-bg-soft:#101520;
+    --pro-surface:#151b27;
+    --pro-surface-hover:#1d2536;
+    --pro-border:rgba(223,184,90,0.18);
+    --pro-border-strong:rgba(223,184,90,0.38);
+    --pro-text:#f8fafc;
+    --pro-text-dim:#cbd5e1;
+    --pro-text-faint:#94a3b8;
+    --pro-gold:#dfb85a;
+    --pro-gold-soft:#f3e2af;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;max-width:100%;overflow-x:hidden;}
+  body{
+    background:radial-gradient(ellipse 90% 60% at 50% -10%, rgba(223,184,90,0.06), transparent 70%),
+               radial-gradient(circle at 100% 40%, rgba(56,189,248,0.03), transparent 50%),
+               var(--night);
+    color:var(--parchment-body);
+    font-family:'Inter', system-ui, -apple-system, sans-serif;
+    overflow-x:hidden;
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,.display{
+    font-family:'Cinzel', serif;
+    font-weight:700;
+    letter-spacing:0.02em;
+    color:var(--parchment);
+  }
+  .eyebrow{
+    font-family:'Inter', system-ui, sans-serif;
+    font-size:0.7rem;
+    font-weight:700;
+    letter-spacing:0.12em;
+    color:var(--gold);
+    text-transform:uppercase;
+  }
+  a{color:inherit;text-decoration:none;}
+  button{font-family:inherit;cursor:pointer;}
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:0.001ms !important; transition-duration:0.001ms !important;}
+  }
+
+  ::selection{ background:var(--gold); color:var(--ink); }
+  ::-webkit-scrollbar{ width:9px; height:9px; }
+  ::-webkit-scrollbar-track{ background:var(--night); }
+  ::-webkit-scrollbar-thumb{ background:linear-gradient(var(--gold),#8a6c15); border-radius:6px; }
+
+  /* ===== topbar ===== */
+  #scrollProgress{
+    position:fixed; top:0; left:0; height:3px; width:0%;
+    background:linear-gradient(90deg, var(--gold), var(--gold-light));
+    box-shadow:0 0 8px rgba(223,184,90,0.6);
+    z-index:999; pointer-events:none; transition:width .1s linear;
+  }
+
+  .topbar{
+    position:sticky; top:0; z-index:40;
+    display:flex; align-items:center; justify-content:space-between;
+    flex-wrap:wrap; row-gap:0.5rem;
+    padding:0.9rem 1.75rem;
+    background:rgba(11,14,20,0.94);
+    border-bottom:1px solid var(--gold-border);
+    backdrop-filter:blur(12px);
+    -webkit-backdrop-filter:blur(12px);
+    max-width:100vw;
+    transition:box-shadow .25s ease, background .25s ease;
+  }
+  .topbar.scrolled{
+    box-shadow:0 8px 26px rgba(0,0,0,0.5);
+    background:rgba(11,14,20,0.98);
+    border-bottom-color:var(--gold-border-strong);
+  }
+  .brand{display:flex; align-items:center; gap:0.75rem; min-width:0;}
+  .brand-mark{
+    width:36px; height:36px; border-radius:8px;
+    background:linear-gradient(135deg, var(--gold-light), var(--gold) 60%, #8a6c15 100%);
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 0 0 1px rgba(255,255,255,0.2), 0 4px 12px rgba(223,184,90,0.3);
+    font-size:1.1rem; color:var(--ink); font-weight:900; font-family:'Cinzel', serif;
+  }
+  .brand-text{line-height:1.15; min-width:0;}
+  .brand-text .t1{font-family:'Inter', sans-serif; font-weight:600; font-size:0.68rem; letter-spacing:0.12em; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .brand-text .t2{font-family:'Cinzel', serif; font-weight:700; font-size:1rem; color:var(--parchment); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .nav-actions{display:flex; align-items:center; gap:0.65rem; flex-wrap:wrap; justify-content:flex-end; min-width:0;}
+
+  /* ===== buttons ===== */
+  .btn{
+    border:none; border-radius:6px;
+    padding:0.62rem 1.25rem;
+    font-family:'Cinzel', serif;
+    font-size:0.84rem; letter-spacing:0.04em; font-weight:600;
+    transition:all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+    display:inline-flex; align-items:center; justify-content:center; gap:0.45rem;
+  }
+  .btn:focus-visible{ outline:2px solid var(--gold); outline-offset:2px; }
+  .btn-gold{
+    background:linear-gradient(135deg, var(--gold-light) 0%, var(--gold) 65%, #bb9230 100%);
+    color:#0b0e14; font-weight:700;
+    box-shadow:0 3px 12px rgba(223,184,90,0.28);
+  }
+  .btn-gold:hover{
+    transform:translateY(-2px);
+    box-shadow:0 6px 18px rgba(223,184,90,0.4);
+    filter:brightness(1.04);
+  }
+  .btn-ghost{
+    background:rgba(223,184,90,0.06); color:var(--parchment);
+    border:1px solid var(--gold-border);
+  }
+  .btn-ghost:hover{
+    border-color:var(--gold); color:var(--gold-light);
+    background:rgba(223,184,90,0.14);
+    box-shadow:0 4px 14px rgba(223,184,90,0.12);
+  }
+  .btn:active{ transform:translateY(0) scale(0.98); }
+  .btn-wide{width:100%;}
+  .btn-sm{ padding:0.42rem 0.75rem; font-size:0.75rem; border-radius:5px; }
+
+  /* ===== HERO (CLEAN, MAJESTIC, NO STUCK SCROLL) ===== */
+  .hero-clean-wrap{
+    position:relative; min-height:84vh;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    text-align:center; padding:5rem 1.5rem 4rem;
+    overflow:hidden;
+  }
+  .hero-bg-art{
+    position:absolute; inset:0; width:100%; height:100%;
+    object-fit:cover; pointer-events:none; opacity:0.65; z-index:1;
+  }
+  .hero-scrim{
+    position:absolute; inset:0; z-index:2; pointer-events:none;
+    background:radial-gradient(ellipse at 50% 45%, transparent 20%, rgba(11,14,20,0.85) 75%, var(--night) 100%);
+  }
+  .hero-content{
+    position:relative; z-index:4; max-width:760px; margin:0 auto;
+    padding:2.4rem 2rem; border-radius:18px;
+    background:rgba(11,14,20,0.78);
+    backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
+    border:1px solid var(--gold-border-strong);
+    box-shadow:0 24px 60px rgba(0,0,0,0.6), 0 0 35px rgba(223,184,90,0.12);
+  }
+  .hero-clean-wrap h1{
+    font-size:clamp(2.2rem, 5.5vw, 4rem);
+    color:var(--gold-light);
+    margin:0 0 1rem;
+    line-height:1.08;
+    text-shadow:0 3px 0 #2a1c0d, 0 8px 24px rgba(0,0,0,0.7);
+  }
+  .crest-row{
+    display:flex; align-items:center; justify-content:center; gap:0.6rem;
+    margin-bottom:1.1rem; opacity:0.95;
+  }
+  .crest-row .rule{ width:48px; height:1px; background:linear-gradient(90deg, transparent, var(--gold), transparent); }
+  .hero .sub, .hero-content .sub{
+    font-size:clamp(1.02rem, 1.6vw, 1.22rem);
+    max-width:640px;
+    color:var(--parchment-body);
+    font-family:'EB Garamond', serif;
+    font-style:italic;
+    margin:0 auto 2rem;
+    line-height:1.65;
+  }
+  .hero-actions{ display:flex; gap:0.9rem; flex-wrap:wrap; justify-content:center; }
+  .scroll-cue{
+    margin-top:2.4rem; font-family:'Inter', sans-serif; font-size:0.72rem; font-weight:700;
+    color:var(--gold-light); letter-spacing:0.12em; opacity:0.9;
+    animation:bob 2.2s ease-in-out infinite;
+  }
+  @keyframes bob{ 0%,100%{transform:translateY(0);} 50%{transform:translateY(6px);} }
+
+  .torch{
+    position:absolute; top:20%; width:10px; height:34px; border-radius:2px;
+    background:linear-gradient(180deg, #6b4724, #2a1c10); z-index:3;
+  }
+  .torch.left{ left:6%; } .torch.right{ right:6%; }
+  @media (max-width:768px){ .torch{ display:none; } }
+  .flame{
+    position:absolute; top:-22px; left:50%; transform:translateX(-50%);
+    width:16px; height:26px; border-radius:50% 50% 50% 50% / 60% 60% 40% 40%;
+    background:radial-gradient(circle at 50% 70%, #fff4c2, var(--gold) 45%, var(--ember) 85%);
+    filter:blur(0.3px);
+    animation:flicker 2.4s ease-in-out infinite;
+    box-shadow:0 0 20px 6px rgba(223,184,90,0.3);
+  }
+  @keyframes flicker{
+    0%,100%{ transform:translateX(-50%) scaleY(1) rotate(-2deg); opacity:1;}
+    35%{ transform:translateX(-50%) scaleY(1.12) rotate(2deg); opacity:0.92;}
+    60%{ transform:translateX(-50%) scaleY(0.94) rotate(-1deg); opacity:1;}
+  }
+
+  /* ===== SECTIONS ===== */
+  section{ position:relative; padding:4.5rem 1.5rem; }
+  .section-inner{ max-width:1080px; margin:0 auto; }
+  .section-head{ text-align:center; margin-bottom:2.6rem; position:relative; }
+  .section-head h2{ font-size:clamp(1.75rem,3.2vw,2.5rem); color:var(--gold-light); margin:0.5rem 0 0.7rem; }
+  .section-head h2::after{
+    content:""; display:block; width:56px; height:2px; margin:0.8rem auto 0;
+    background:linear-gradient(90deg, transparent, var(--gold), transparent);
+  }
+  .section-head p{ color:var(--text-muted); max-width:640px; margin:0 auto; font-size:1.05rem; }
+
+  /* ===== QUALITATIVE RESPONSIBILITIES OVERVIEW STRIP ===== */
+  .resp-strip-wrap{
+    max-width:1080px; margin:0 auto 2.5rem; padding:0 1.25rem;
+  }
+  .resp-strip{
+    display:grid; grid-template-columns:repeat(4, 1fr);
+    background:linear-gradient(180deg, rgba(22,28,42,0.92), rgba(14,18,27,0.95));
+    border:1px solid var(--gold-border-strong);
+    border-radius:14px;
+    padding:1.4rem 1.6rem;
+    box-shadow:0 18px 45px rgba(0,0,0,0.45), 0 0 25px rgba(223,184,90,0.08);
+    gap:1.2rem; align-items:flex-start;
+  }
+  @media (max-width:880px){
+    .resp-strip{ grid-template-columns:repeat(2, 1fr); gap:1.4rem; padding:1.2rem; }
+  }
+  @media (max-width:480px){
+    .resp-strip{ grid-template-columns:1fr; }
+  }
+  .resp-item{ text-align:left; position:relative; }
+  .resp-icon{ font-size:1.6rem; margin-bottom:0.4rem; display:block; }
+  .resp-title{
+    display:block; font-family:'Cinzel', serif; font-size:0.92rem; font-weight:700;
+    color:var(--gold-light); margin-bottom:0.25rem;
+  }
+  .resp-desc{
+    display:block; font-size:0.8rem; color:var(--text-muted); line-height:1.45;
+  }
+
+  /* ===== CHARGE SECTION ===== */
+  .charge-grid{
+    display:grid; grid-template-columns:220px 1fr; gap:3.5rem; align-items:center;
+  }
+  @media (max-width:820px){
+    .charge-grid{ grid-template-columns:1fr; text-align:center; }
+  }
+
+  .seal-badge-interactive{
+    display:flex; flex-direction:column; align-items:center;
+    width:220px; margin:0 auto;
+  }
+  .seal-icon-wrap{
+    position:relative; width:190px; height:190px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .seal-caption{
+    margin-top:1.1rem; text-align:center;
+    font-size:0.82rem; line-height:1.5; color:var(--text-muted);
+  }
+  .orbital-ring{
+    position:absolute; border-radius:50%; pointer-events:none;
+  }
+  .orbital-ring.ring-outer{
+    inset:0; border:1.5px dashed rgba(223,184,90,0.35);
+    animation:orbitClockwise 24s linear infinite;
+  }
+  .orbital-ring.ring-inner{
+    inset:14px; border:1px solid rgba(223,184,90,0.22);
+    animation:orbitCounter 18s linear infinite;
+  }
+  @keyframes orbitClockwise{ from{transform:rotate(0deg);} to{transform:rotate(360deg);} }
+  @keyframes orbitCounter{ from{transform:rotate(360deg);} to{transform:rotate(0deg);} }
+  .seal-core{
+    width:130px; height:130px; border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #4a2c16 0%, #291a0c 60%, #150d06 100%);
+    border:2px solid var(--gold);
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 0 0 4px rgba(223,184,90,0.18), 0 12px 30px rgba(0,0,0,0.6), inset 0 0 20px rgba(223,184,90,0.25);
+    color:var(--gold-light);
+    transition:transform 0.25s ease, box-shadow 0.25s ease;
+  }
+  .seal-core svg{ width:62px; height:62px; }
+  .crest-tag{
+    display:inline-flex; align-items:center; gap:0.5rem;
+    padding:0.3rem 0.75rem; border-radius:99px;
+    background:rgba(223,184,90,0.08); border:1px solid var(--gold-border);
+    margin-bottom:0.8rem;
+  }
+  .pulse-dot{
+    width:7px; height:7px; border-radius:50%; background:var(--moss);
+    box-shadow:0 0 8px rgba(34,197,94,0.75);
+  }
+  .charge-text h2{ color:var(--gold-light); margin:0 0 1rem; font-size:clamp(1.7rem,3vw,2.3rem); }
+  .charge-text p{ font-size:1.1rem; line-height:1.75; color:var(--parchment-body); margin:0 0 1.1rem; font-family:'EB Garamond', serif; }
+  .charge-text strong{ color:var(--gold-light); }
+  .envoys-badge-pills{ display:flex; gap:0.6rem; flex-wrap:wrap; margin-top:1.4rem; }
+  .envoy-pill{
+    font-family:'Inter', sans-serif; font-size:0.75rem; font-weight:600;
+    background:rgba(223,184,90,0.08); border:1px solid var(--gold-border);
+    color:var(--parchment); padding:0.35rem 0.8rem; border-radius:99px;
+  }
+
+  /* ===== ROLE OF TSA - INTERACTIVE FOUR PILLARS CODEX ===== */
+  .role-tabs-bar{
+    display:grid; grid-template-columns:repeat(4, 1fr); gap:0.75rem;
+    margin-bottom:1.8rem;
+  }
+  @media (max-width:820px){ .role-tabs-bar{ grid-template-columns:repeat(2, 1fr); } }
+  @media (max-width:480px){ .role-tabs-bar{ grid-template-columns:1fr; } }
+  .role-tab{
+    background:linear-gradient(180deg, rgba(22,28,42,0.85), rgba(14,18,27,0.9));
+    border:1px solid var(--gold-border);
+    border-radius:10px; padding:1.1rem 1rem; text-align:left;
+    color:var(--text-muted); cursor:pointer;
+    transition:all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+    position:relative; overflow:hidden;
+  }
+  .role-tab::before{
+    content:""; position:absolute; bottom:0; left:0; right:0; height:3px;
+    background:var(--gold); transform:scaleX(0); transition:transform 0.22s ease;
+  }
+  .role-tab:hover{
+    background:rgba(223,184,90,0.1); border-color:var(--gold-border-strong);
+    color:var(--parchment); transform:translateY(-2px);
+  }
+  .role-tab.active{
+    background:linear-gradient(180deg, rgba(223,184,90,0.16), rgba(17,23,34,0.95));
+    border-color:var(--gold); color:var(--parchment);
+    box-shadow:0 8px 22px rgba(0,0,0,0.4), 0 0 16px rgba(223,184,90,0.14);
+  }
+  .role-tab.active::before{ transform:scaleX(1); }
+  .role-tab-icon{ font-size:1.5rem; display:block; margin-bottom:0.45rem; }
+  .role-tab-text{
+    display:block; font-family:'Cinzel', serif; font-size:0.95rem; font-weight:700;
+    color:var(--gold-light);
+  }
+  .role-tab-hint{
+    display:block; font-family:'Inter', sans-serif; font-size:0.72rem; color:var(--text-muted);
+    margin-top:0.25rem; font-weight:500;
+  }
+
+  /* Role showcase stage card */
+  .role-showcase-wrap{ margin-bottom:2.4rem; }
+  .role-showcase-stage{
+    background:linear-gradient(180deg, rgba(22,28,42,0.92), rgba(13,17,25,0.96));
+    border:1px solid var(--gold-border-strong);
+    border-radius:14px; padding:2.2rem 2.4rem;
+    box-shadow:0 16px 40px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.06);
+    display:grid; grid-template-columns:1.15fr 1fr; gap:2.4rem; align-items:center;
+    transition:opacity 0.22s ease, transform 0.22s ease;
+  }
+  @media (max-width:820px){ .role-showcase-stage{ grid-template-columns:1fr; padding:1.6rem; } }
+  .stage-left .stage-badge{
+    display:inline-flex; align-items:center; gap:0.45rem;
+    padding:0.3rem 0.75rem; border-radius:99px;
+    background:rgba(223,184,90,0.12); border:1px solid var(--gold-border);
+    font-family:'Inter', sans-serif; font-size:0.72rem; font-weight:700; color:var(--gold);
+    text-transform:uppercase; margin-bottom:0.9rem;
+  }
+  .stage-left h3{ font-size:1.65rem; color:var(--gold-light); margin:0 0 0.8rem; }
+  .stage-left p{ font-size:1.05rem; line-height:1.7; color:var(--parchment-body); font-family:'EB Garamond', serif; margin:0 0 1.3rem; }
+  .stage-target-row{ display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center; }
+  .stage-target-label{ font-size:0.75rem; color:var(--text-muted); font-weight:600; text-transform:uppercase; }
+  .target-tag{
+    font-size:0.75rem; padding:0.25rem 0.65rem; border-radius:6px;
+    background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); color:var(--parchment);
+  }
+
+  .stage-right{
+    background:rgba(11,14,20,0.65); border:1px solid var(--gold-border);
+    border-radius:10px; padding:1.6rem;
+  }
+  .stage-right h4{
+    font-family:'Cinzel', serif; font-size:0.98rem; color:var(--gold-light);
+    margin:0 0 1rem; display:flex; align-items:center; gap:0.5rem;
+  }
+  .deliverables-list{ list-style:none; padding:0; margin:0 0 1.4rem; }
+  .deliverables-list li{
+    display:flex; align-items:flex-start; gap:0.65rem;
+    font-size:0.92rem; color:var(--parchment-body); margin-bottom:0.75rem; line-height:1.5;
+  }
+  .check-icon{ color:var(--moss); font-weight:900; flex-shrink:0; font-size:1rem; }
+  .stage-cta-btn{ width:100%; }
+
+  /* ===== LIVE INTERACTIVE MISSION SIMULATOR ===== */
+  .simulator-card{
+    background:linear-gradient(180deg, rgba(20,26,39,0.95), rgba(12,15,23,0.98));
+    border:1px solid var(--gold-border-strong);
+    border-radius:14px; padding:2rem 2.2rem;
+    box-shadow:0 18px 45px rgba(0,0,0,0.5), 0 0 30px rgba(223,184,90,0.07);
+    margin-bottom:2.6rem;
+  }
+  .sim-header{
+    display:flex; justify-content:space-between; align-items:center;
+    flex-wrap:wrap; gap:0.8rem; padding-bottom:1.2rem;
+    border-bottom:1px solid var(--gold-border); margin-bottom:1.4rem;
+  }
+  .sim-status{ display:flex; align-items:center; gap:0.6rem; }
+  .live-dot.pulse{ animation:glowPulse 2s infinite; }
+  @keyframes glowPulse{ 0%,100%{opacity:1;transform:scale(1);} 50%{opacity:0.5;transform:scale(1.2);} }
+  .sim-tag{
+    font-family:'Inter', sans-serif; font-size:0.74rem; font-weight:600;
+    color:var(--text-muted); background:rgba(255,255,255,0.05); padding:0.3rem 0.75rem; border-radius:99px;
+  }
+  .sim-info{
+    display:grid; grid-template-columns:repeat(3, 1fr); gap:1.2rem;
+    background:rgba(11,14,20,0.6); border:1px solid rgba(223,184,90,0.14);
+    border-radius:9px; padding:1rem 1.25rem; margin-bottom:1.6rem;
+  }
+  @media (max-width:760px){ .sim-info{ grid-template-columns:1fr; } }
+  .sim-meta-label{ display:block; font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; font-weight:600; }
+  .sim-meta-val{ display:block; font-size:0.92rem; color:var(--gold-light); margin-top:0.2rem; }
+
+  .sim-progress-track{
+    width:100%; height:8px; background:rgba(255,255,255,0.08);
+    border-radius:99px; overflow:hidden; margin-bottom:1.6rem;
+  }
+  .sim-progress-bar{
+    height:100%; width:0%;
+    background:linear-gradient(90deg, var(--gold), var(--gold-light));
+    box-shadow:0 0 12px rgba(223,184,90,0.6);
+    transition:width 0.4s ease;
+  }
+
+  .sim-steps{
+    display:grid; grid-template-columns:repeat(4, 1fr); gap:1rem;
+    margin-bottom:1.8rem;
+  }
+  @media (max-width:760px){ .sim-steps{ grid-template-columns:repeat(2, 1fr); } }
+  @media (max-width:480px){ .sim-steps{ grid-template-columns:1fr; } }
+  .sim-step{
+    display:flex; align-items:flex-start; gap:0.65rem;
+    padding:0.75rem 0.85rem; border-radius:8px;
+    background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06);
+    transition:all 0.25s ease;
+  }
+  .sim-step.active{
+    background:rgba(223,184,90,0.12); border-color:var(--gold);
+    box-shadow:0 0 14px rgba(223,184,90,0.15);
+  }
+  .sim-step.completed{
+    background:rgba(34,197,94,0.1); border-color:var(--moss);
+  }
+  .sim-step-num{
+    width:24px; height:24px; border-radius:50%;
+    background:rgba(255,255,255,0.1); display:flex; align-items:center; justify-content:center;
+    font-size:0.75rem; font-weight:700; color:var(--text-muted); flex-shrink:0;
+  }
+  .sim-step.active .sim-step-num{ background:var(--gold); color:var(--ink); }
+  .sim-step.completed .sim-step-num{ background:var(--moss); color:#fff; }
+  .sim-step-info strong{ display:block; font-size:0.82rem; color:var(--parchment); }
+  .sim-step-info span{ display:block; font-size:0.72rem; color:var(--text-muted); margin-top:0.15rem; }
+
+  .sim-actions{
+    display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:1rem;
+  }
+  .sim-feedback{ font-size:0.85rem; color:var(--text-muted); font-style:italic; }
+
+  /* ===== CTA BANNER ===== */
+  .cta-banner{
+    background:radial-gradient(ellipse at 50% 50%, rgba(223,184,90,0.12) 0%, transparent 70%),
+               linear-gradient(180deg, rgba(18,24,36,0.9), rgba(11,14,20,0.95));
+    border-top:1px solid var(--gold-border);
+    border-bottom:1px solid var(--gold-border);
+    text-align:center; padding:4.5rem 1.5rem;
+  }
+  .cta-banner h2{ margin:0 0 0.8rem; color:var(--gold-light); font-size:clamp(1.8rem,3vw,2.4rem); }
+  .cta-banner p{ color:var(--text-muted); margin:0 0 2rem; font-size:1.1rem; }
+
+  footer{
+    text-align:center; padding:2.5rem 1.5rem 3rem; color:var(--text-muted); font-size:0.86rem;
+  }
+  footer .rule{ width:80px; height:1px; margin:0 auto 1.2rem; background:linear-gradient(90deg, transparent, var(--gold), transparent); }
+
+  /* ===== MODALS (DARK LUXURY GLASS - ZERO GLARE) ===== */
+  .overlay{
+    position:fixed; inset:0; z-index:100;
+    background:rgba(8,10,15,0.85);
+    backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
+    display:none; align-items:center; justify-content:center;
+    padding:1.5rem;
+  }
+  .overlay.open{ display:flex; }
+  .scroll-modal{
+    width:100%; max-width:480px;
+    background:linear-gradient(180deg, #161c28 0%, #0e121a 100%);
+    color:var(--parchment);
+    border:1px solid var(--gold-border-strong);
+    border-radius:12px;
+    padding:2.2rem 2rem 2rem;
+    position:relative;
+    box-shadow:0 24px 70px rgba(0,0,0,0.8), 0 0 35px rgba(223,184,90,0.12);
+    transform-origin:top center;
+    animation:unroll 0.25s cubic-bezier(.2,.8,.3,1);
+    max-height:88vh; overflow-y:auto;
+  }
+  @keyframes unroll{
+    from{ transform:scaleY(0.7) translateY(-10px); opacity:0; }
+    to{ transform:scaleY(1) translateY(0); opacity:1; }
+  }
+  .scroll-modal h3{ font-family:'Cinzel', serif; color:var(--gold-light); font-size:1.35rem; margin:0 0 0.35rem; padding-bottom:0.5rem; border-bottom:1px solid rgba(223,184,90,0.16); }
+  .scroll-modal .modal-sub{ font-size:0.9rem; color:var(--text-muted); margin:0.5rem 0 1.3rem; font-style:italic; }
+  .modal-close{
+    position:absolute; top:1rem; right:1.1rem;
+    background:none; border:none; font-size:1.3rem; color:var(--text-muted); opacity:0.75;
+    transition:all 0.15s ease;
+  }
+  .modal-close:hover{ opacity:1; color:var(--gold-light); transform:scale(1.1); }
+
+  .field{ margin-bottom:1.15rem; }
+  .field label{ display:block; font-size:0.8rem; letter-spacing:0.04em; color:var(--parchment); margin-bottom:0.4rem; font-family:'Cinzel', serif; font-weight:600; }
+  .field input, .field select, .field textarea{
+    width:100%; padding:0.65rem 0.85rem; border-radius:6px;
+    border:1px solid var(--gold-border); background:#1a2130;
+    font-family:'Inter', sans-serif; font-size:0.95rem; color:var(--parchment);
+    transition:all 0.15s ease;
+  }
+  .field textarea{ resize:vertical; min-height:75px; }
+  .field input:focus, .field select:focus, .field textarea:focus{
+    outline:none; border-color:var(--gold);
+    box-shadow:0 0 0 3px rgba(223,184,90,0.22);
+  }
+  .field input::placeholder, .field textarea::placeholder{ color:#64748b; }
+  .form-note{ font-size:0.82rem; color:var(--text-muted); margin-top:0.9rem; text-align:center; }
+  .switch-link{ background:none; border:none; color:var(--gold); font-family:'Cinzel', serif; font-size:0.86rem; text-decoration:underline; padding:0; cursor:pointer; }
+  .switch-link:hover{ color:var(--gold-light); }
+
+  /* Wax seal submit */
+  .seal-submit{
+    display:flex; align-items:center; justify-content:center; gap:0.7rem;
+    width:100%; margin-top:0.7rem;
+    background:linear-gradient(135deg, #d97706 0%, #b45309 60%, #92400e 100%);
+    color:#fff7ed; border-radius:6px; padding:0.8rem 1rem;
+    font-family:'Cinzel', serif; font-weight:700; letter-spacing:0.06em;
+    border:1px solid rgba(251,191,36,0.4);
+    box-shadow:0 4px 14px rgba(180,83,9,0.35);
+    transition:transform 0.12s ease, box-shadow 0.15s ease;
+  }
+  .seal-submit:hover{ transform:translateY(-1px); box-shadow:0 6px 18px rgba(180,83,9,0.45); filter:brightness(1.05); }
+  .seal-submit:active{ transform:translateY(1px); }
+  .seal-submit.stamped{ animation:stamp 0.4s ease; }
+  @keyframes stamp{
+    0%{ transform:scale(1); }
+    35%{ transform:scale(1.15) rotate(-3deg); }
+    60%{ transform:scale(0.95) rotate(2deg); }
+    100%{ transform:scale(1) rotate(0); }
+  }
+  .confirm-block{ text-align:center; padding:0.5rem 0 0.2rem; }
+  .confirm-block .big-seal{
+    width:68px; height:68px; border-radius:50%; margin:0 auto 1.1rem;
+    background:radial-gradient(circle at 35% 30%, #d97706, #b45309 65%, #78350f 100%);
+    border:2px solid #fbbf24;
+    display:flex; align-items:center; justify-content:center; color:#fff7ed; font-size:1.8rem;
+    box-shadow:0 8px 22px rgba(0,0,0,0.45), 0 0 20px rgba(251,191,36,0.35);
+  }
+
+  /* Universal select options styling */
+  select{
+    background-color:#1a2130 !important; color:#f8fafc !important; cursor:pointer;
+    background-image:linear-gradient(45deg, transparent 50%, var(--gold-light) 50%),
+                      linear-gradient(135deg, var(--gold-light) 50%, transparent 50%);
+    background-position: calc(100% - 20px) center, calc(100% - 15px) center;
+    background-size: 5px 5px, 5px 5px;
+    background-repeat:no-repeat;
+    appearance:none; -webkit-appearance:none;
+    padding-right:2.4rem !important;
+    color-scheme:dark;
+  }
+  select option{
+    background-color:#151a26 !important; color:#f8fafc !important; padding:0.6rem;
+  }
+
+  /* ===== HOMEPAGE (POST-LOGIN) ===== */
+  #homepage{ display:none; background:var(--night); color:var(--parchment-body); position:relative; }
+  #homepage::before{
+    content:""; position:fixed; inset:0; pointer-events:none; z-index:0;
+    background:
+      radial-gradient(520px 460px at var(--mx,88%) var(--my,8%), rgba(223,184,90,0.11), transparent 65%),
+      radial-gradient(760px 540px at 88% var(--homepage-scroll-y, 8%), rgba(223,184,90,0.09), transparent 60%),
+      radial-gradient(640px 520px at 6% 78%, rgba(56,189,248,0.08), transparent 60%),
+      radial-gradient(ellipse 950px 540px at 50% 100%, rgba(223,184,90,0.07), transparent 65%);
+  }
+  #homepage::after{
+    content:""; position:fixed; inset:0; pointer-events:none; z-index:0; opacity:0.7;
+    background-image:radial-gradient(rgba(223,184,90,0.13) 1.2px, transparent 1.2px);
+    background-size:26px 26px;
+    background-position:0 var(--homepage-scroll-y-px, 0px);
+    -webkit-mask-image:radial-gradient(ellipse 80% 70% at 50% 30%, #000 30%, transparent 75%);
+    mask-image:radial-gradient(ellipse 80% 70% at 50% 30%, #000 30%, transparent 75%);
+  }
+  #homepage > *{ position:relative; z-index:1; }
+  #homepage.active{ display:block; }
+  #landing.hidden{ display:none; }
+
+  /* Dashboard animated background */
+  #dashBgCanvas{
+    position:fixed; inset:0; width:100%; height:100%;
+    pointer-events:none; z-index:0; opacity:0.35;
+  }
+
+  /* ---- Command hero: greeting + ID card side-by-side (was unstyled) ---- */
+  .dash-content{ flex:1 1 auto; min-width:0; }
+  .cmd-hero{
+    position:relative;
+    padding:1.2rem clamp(1.25rem,4vw,3rem) 0.6rem;
+    border-bottom:1px solid var(--gold-border);
+    background:linear-gradient(180deg, rgba(11,14,20,0.92) 0%, rgba(11,14,20,0.7) 100%);
+    min-height:245px;
+  }
+  .cmd-hero-top{
+    margin-bottom:0;
+  }
+  .cmd-hero-text{ min-width:260px; max-width:calc(100% - 160px); will-change:transform, opacity; }
+  .cmd-hero-text #welcomeName{ font-size:clamp(1.7rem,3vw,2.3rem); color:var(--gold-light); margin:0.3rem 0 0.4rem; }
+  .cmd-hero-text #welcomeSub{ color:var(--text-muted); font-size:1rem; margin:0; }
+  /* ID card floats independently in the corner so its own height never
+     stretches the hero row — previously, since the card is taller than
+     the greeting text, the grid row (and everything below it) was pushed
+     down to match the card's height even when the text was short. */
+  .cmd-hero .id-lanyard{ position:absolute; top:1rem; right:clamp(1.25rem,4vw,3rem); margin:0; }
+  @media (max-width:820px){
+    .cmd-hero-top{ text-align:center; }
+    .cmd-hero-text{ max-width:100%; }
+    .cmd-hero .id-lanyard{ position:static; margin:1rem auto 0; }
+  }
+
+  .home-hero{
+    padding:1.8rem clamp(1.25rem,4vw,3rem) 1.4rem;
+    border-bottom:1px solid var(--gold-border);
+    display:flex; align-items:center; justify-content:space-between; gap:2rem; flex-wrap:wrap;
+    position:relative; z-index:1;
+    background:linear-gradient(180deg, rgba(11,14,20,0.92) 0%, rgba(11,14,20,0.7) 100%);
+  }
+  .home-hero-text{ flex:1 1 320px; min-width:260px; }
+  .home-hero h1{ font-size:clamp(1.7rem,3vw,2.3rem); color:var(--gold-light); margin:0 0 0.4rem; }
+  .home-hero p{ color:var(--text-muted); font-size:1rem; margin:0; }
+
+  .dash-wrap{
+    display:flex; align-items:stretch; gap:0; max-width:none; margin:0; padding:0;
+    position:relative; z-index:1;
+  }
+  .dash-tabs{
+    position:sticky; top:var(--topbar-h, 65px); align-self:stretch;
+    height:calc(100vh - var(--topbar-h, 65px)); min-height:420px;
+    width:250px; flex:0 0 250px;
+    background:
+      radial-gradient(rgba(223,184,90,0.07) 1px, transparent 1px),
+      radial-gradient(340px 260px at 30% 0%, rgba(223,184,90,0.06), transparent 65%),
+      linear-gradient(180deg, rgba(12,15,23,0.97) 0%, rgba(9,12,19,0.98) 100%);
+    background-size:24px 24px, 100% 100%, 100% 100%;
+    border-right:1px solid var(--gold-border);
+    padding:0.75rem 0.6rem; gap:0.25rem; display:flex; flex-direction:column;
+    overflow-y:auto; z-index:2;
+  }
+  /* Members should never see admin-only tabs/panels — the JS already
+     tags <body> with role-admin/role-member, but nothing was hiding
+     .admin-only elements for members until now. */
+  body.role-member .admin-only{ display:none !important; }
+
+  .tab-btn{
+    text-align:left; background:transparent; border:1px solid transparent;
+    color:var(--text-muted); padding:0.7rem 0.85rem; border-radius:8px;
+    font-family:'Inter', sans-serif; font-size:0.88rem; font-weight:600;
+    transition:all 0.15s ease; position:relative;
+    display:flex; align-items:center; justify-content:space-between; gap:0.5rem;
+  }
+  .tab-btn::before{
+    content:""; position:absolute; left:0; top:0; bottom:0; width:3px;
+    background:var(--gold); border-radius:0 3px 3px 0;
+    transform:scaleY(0); transition:transform .18s ease;
+  }
+  .tab-btn:hover{ background:rgba(223,184,90,0.08); color:var(--parchment); }
+  .tab-btn.active{
+    background:rgba(223,184,90,0.14); border-color:rgba(223,184,90,0.28); color:var(--gold-light);
+  }
+  .tab-btn.active::before{ transform:scaleY(1); }
+  .tab-btn .tab-icon{
+    width:22px; height:22px; display:inline-flex; align-items:center; justify-content:center;
+    opacity:0.85; margin-right:0.2rem;
+  }
+  .tab-btn .tab-icon svg{ width:18px; height:18px; }
+  .tab-divider{ border:none; border-top:1px solid rgba(223,184,90,0.15); margin:0.6rem 0.3rem; }
+  .tab-badge{
+    display:inline-block; margin-left:0.4rem; background:var(--ember); color:#fff;
+    font-family:'Inter', sans-serif; font-size:0.66rem; font-weight:700;
+    padding:0.15rem 0.45rem; border-radius:99px;
+  }
+
+  .dash-panels{ flex:1 1 auto; min-width:0; padding:1.4rem clamp(1.25rem,4vw,3rem) 5rem; position:relative; z-index:1; }
+  .dash-panel{ display:none; padding:0; }
+  .dash-panel.active{ display:block; animation:panelFade .25s ease; }
+  @keyframes panelFade{ from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);} }
+  .dash-panel h2{ color:var(--gold-light); font-size:1.5rem; margin:0 0 0.3rem; }
+  .dash-panel h3{ font-family:'Cinzel', serif; color:var(--gold-light); font-size:1.1rem; margin:2rem 0 0.8rem; }
+  .panel-hint{ color:var(--text-muted); font-size:0.92rem; margin:0 0 1.6rem; }
+  .empty-note{ color:var(--text-muted); font-style:italic; font-size:0.95rem; }
+  .rule-line{ border:none; border-top:1px solid var(--gold-border); margin:2.2rem 0; }
+
+  /* Overview cards in dashboard */
+  .overview-grid{
+    display:grid; grid-template-columns:repeat(3,1fr); gap:1rem; margin:0 0 1.8rem;
+  }
+  @media (max-width:820px){ .overview-grid{ grid-template-columns:1fr; } }
+  .overview-card{
+    background:linear-gradient(180deg, rgba(22,28,42,0.85), rgba(14,18,27,0.9));
+    border:1px solid var(--gold-border); border-radius:10px; padding:1.2rem 1.4rem;
+  }
+  .overview-card .eyebrow{ font-size:0.65rem; display:block; margin-bottom:0.4rem; color:var(--gold); }
+  .overview-number{ font-family:'Cinzel',serif; font-size:2rem; color:var(--gold-light); font-weight:700; }
+  .overview-label{ display:block; color:var(--text-muted); font-size:0.84rem; margin-top:0.2rem; }
+
+  /* Tasks & Partners cards */
+  .task-card, .partner-card, .application-card, .document-card{
+    background:linear-gradient(180deg, rgba(22,28,42,0.85), rgba(14,18,27,0.9));
+    border:1px solid var(--gold-border);
+    border-radius:10px; padding:1.3rem 1.4rem; margin-bottom:1rem;
+    transition:transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+  }
+  .task-card:hover, .partner-card:hover, .application-card:hover, .document-card:hover{
+    transform:translateY(-2px); border-color:var(--gold-border-strong);
+    box-shadow:0 12px 28px rgba(0,0,0,0.35);
+  }
+  .task-top{ display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom:0.4rem; }
+  .task-top h3, .partner-card h3{ margin:0; font-size:1.05rem; color:var(--gold-light); }
+  .task-card p, .partner-card p{ color:var(--parchment-body); font-size:0.95rem; line-height:1.55; margin:0.3rem 0; }
+  .due-note{ font-size:0.82rem; color:var(--text-muted); font-style:italic; }
+  .partner-notes{ font-style:italic; color:var(--text-muted); }
+  .partner-actions{ display:flex; gap:0.5rem; margin-top:0.9rem; flex-wrap:wrap; }
+
+  .status-badge{
+    font-family:'Inter', sans-serif; font-size:0.68rem; font-weight:700; letter-spacing:0.04em;
+    padding:0.25rem 0.6rem; border-radius:99px; white-space:nowrap; text-transform:uppercase;
+  }
+  .st-pending{ background:rgba(249,115,22,0.18); color:#fb923c; border:1px solid rgba(249,115,22,0.35); }
+  .st-submitted{ background:rgba(56,189,248,0.18); color:#38bdf8; border:1px solid rgba(56,189,248,0.35); }
+  .st-approved{ background:rgba(34,197,94,0.18); color:#4ade80; border:1px solid rgba(34,197,94,0.35); }
+
+  .priority-high{ border-left:3px solid var(--ruby); }
+  .priority-normal{ border-left:3px solid var(--gold); }
+  .priority-low{ border-left:3px solid var(--moss); }
+
+  .task-meta{ display:flex; gap:0.45rem; flex-wrap:wrap; margin:0.65rem 0; }
+  .meta-chip{ font-size:0.75rem; color:var(--parchment); border:1px solid var(--gold-border); padding:0.22rem 0.5rem; border-radius:4px; background:rgba(255,255,255,0.03); }
+
+  .member-row{
+    display:flex; align-items:center; gap:0.8rem; flex-wrap:wrap;
+    padding:0.9rem 1.1rem; margin-bottom:0.6rem;
+    background:linear-gradient(180deg,var(--surface-card),var(--night-alt));
+    border:1px solid var(--gold-border-strong); border-radius:8px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.3);
+  }
+  .member-info{ display:flex; flex-direction:column; min-width:170px; flex:1; }
+  .member-info strong{ color:var(--parchment); font-size:0.96rem; }
+  .member-email{ color:var(--text-muted); font-size:0.82rem; }
+  .member-actions{ display:flex; gap:0.45rem; flex-wrap:wrap; }
+
+  .status-pill{
+    display:inline-block; font-family:'Inter', sans-serif; font-size:0.68rem; font-weight:700;
+    letter-spacing:0.04em; text-transform:uppercase;
+    background:rgba(34,197,94,0.15); color:#4ade80; border:1px solid rgba(34,197,94,0.3);
+    padding:0.28rem 0.65rem; border-radius:99px;
+  }
+  .pill-gold{ background:rgba(223,184,90,0.18); color:var(--gold-light); border-color:var(--gold); }
+  .pill-off{ background:rgba(248,113,113,0.18); color:#fca5a5; border-color:rgba(248,113,113,0.35); }
+
+  /* Documents */
+  .document-card{ display:grid; grid-template-columns:auto 1fr auto; gap:1rem; align-items:center; }
+  .document-icon{
+    width:48px; height:52px; border:1px solid var(--gold-border); border-radius:8px;
+    display:grid; place-items:center; background:rgba(223,184,90,0.08); font-size:1.4rem;
+  }
+  .doc-actions{ display:flex; gap:0.45rem; flex-wrap:wrap; justify-content:flex-end; }
+  .dashboard-toolbar{
+    display:flex; align-items:flex-end; justify-content:space-between;
+    flex-wrap:wrap; gap:1.2rem; margin-bottom:1.5rem;
+  }
+  .filter-row{ display:flex; gap:0.7rem; flex-wrap:wrap; }
+  .dashboard-toolbar{
+    display:flex; align-items:flex-end; justify-content:space-between;
+    flex-wrap:wrap; gap:1.2rem; margin-bottom:1.8rem;
+  }
+  .filter-chip{
+    border:1px solid var(--gold-border); background:rgba(223,184,90,0.06);
+    color:var(--text-muted); padding:0.5rem 1rem; border-radius:99px;
+    font-family:'Inter', sans-serif; font-size:0.78rem; font-weight:600; cursor:pointer;
+  }
+  .filter-chip.active, .filter-chip:hover{
+    border-color:var(--gold); color:var(--gold-light); background:rgba(223,184,90,0.18);
+  }
+
+  .upload-zone{
+    border:1px dashed var(--gold-border-strong); border-radius:10px;
+    padding:1.4rem; text-align:center; background:rgba(223,184,90,0.03);
+    margin-bottom:1rem; transition:0.2s;
+  }
+  .upload-zone.drag{ border-color:var(--gold); background:rgba(223,184,90,0.1); }
+  .upload-progress{ height:6px; background:rgba(255,255,255,0.08); border-radius:99px; overflow:hidden; margin:0.8rem 0; }
+  .upload-progress span{ display:block; height:100%; width:0%; background:linear-gradient(90deg,var(--gold),var(--gold-light)); transition:width .15s; }
+
+  /* Compact Envoy ID Badge */
+  .id-lanyard{ position:relative; width:130px; flex:0 0 auto; margin:0 auto; }
+  .id-card{
+    position:relative; width:130px;
+    background:linear-gradient(180deg,var(--surface-card),var(--night-alt));
+    border:1px solid var(--gold-border-strong); border-radius:12px;
+    padding:0.9rem 0.8rem 0.85rem; box-shadow:0 14px 28px rgba(0,0,0,0.55);
+    text-align:center;
+  }
+  .id-card-avatar{
+    width:44px; height:44px; border-radius:50%; margin:0 auto 0.5rem;
+    display:flex; align-items:center; justify-content:center;
+    background:linear-gradient(145deg, var(--gold-light), var(--gold));
+    color:#0b0e14; font-weight:800; font-size:1rem; font-family:'Cinzel',serif;
+    overflow:hidden; user-select:none;
+  }
+  .id-card-avatar img{ width:100%; height:100%; object-fit:cover; }
+  .id-card-name{ font-family:'Cinzel',serif; font-weight:700; font-size:0.84rem; color:var(--parchment); }
+  .id-card-role{
+    font-family:'Inter',sans-serif; font-weight:700; font-size:0.6rem; letter-spacing:0.06em;
+    text-transform:uppercase; color:var(--gold); margin:0.2rem 0 0.5rem;
+  }
+  .id-card-org{
+    font-size:0.64rem; font-family:'Inter',sans-serif; color:var(--text-muted); line-height:1.35;
+    border-top:1px solid var(--gold-border); padding-top:0.45rem;
+  }
+
+  /* Profile */
+  /* ---- Command stat strip + Quick Access row (was missing CSS entirely) ---- */
+  .cmd-stat-strip{
+    display:flex; align-items:stretch; flex-wrap:wrap; gap:0;
+    background:linear-gradient(180deg,var(--surface-card),var(--night-alt));
+    border:1px solid var(--gold-border-strong); border-radius:12px;
+    margin:1.6rem 0 1.1rem; box-shadow:0 10px 26px rgba(0,0,0,0.35);
+    overflow:hidden;
+  }
+  .cmd-stat{
+    display:flex; align-items:center; gap:0.7rem;
+    padding:1rem 1.3rem; flex:1 1 160px; cursor:pointer;
+    transition:background .18s ease;
+  }
+  .cmd-stat:hover{ background:rgba(223,184,90,0.06); }
+  .cmd-stat-icon{
+    width:38px; height:38px; flex:0 0 auto; display:grid; place-items:center;
+    font-size:1.15rem; border-radius:8px; background:rgba(223,184,90,0.1);
+  }
+  .cmd-stat-body{ display:flex; flex-direction:column; line-height:1.25; }
+  .cmd-stat-num{
+    font-family:'Cinzel',serif; font-weight:700; font-size:1.35rem; color:var(--gold-light);
+  }
+  .cmd-stat-lbl{ font-size:0.76rem; color:var(--text-muted); letter-spacing:0.02em; }
+  .cmd-stat-div{ width:1px; background:rgba(223,184,90,0.15); margin:0.8rem 0; flex:0 0 auto; }
+  @media (max-width:900px){ .cmd-stat-div{ display:none; } .cmd-stat{ border-bottom:1px solid rgba(223,184,90,0.1); } }
+
+  .cmd-actions{
+    display:flex; align-items:center; flex-wrap:wrap; gap:0.6rem;
+    margin-bottom:0.4rem;
+  }
+  .cmd-actions-label{
+    font-family:'Cinzel',serif; font-size:0.76rem; letter-spacing:0.08em;
+    color:var(--text-muted); text-transform:uppercase; margin-right:0.3rem;
+  }
+  .cmd-action-btn{
+    display:inline-flex; align-items:center; gap:0.45rem;
+    font-family:'Inter',sans-serif; font-size:0.82rem; font-weight:600;
+    color:var(--parchment-body); background:rgba(255,255,255,0.03);
+    border:1px solid rgba(223,184,90,0.25); border-radius:999px;
+    padding:0.5rem 1rem; cursor:pointer; transition:all .18s ease;
+  }
+  .cmd-action-btn:hover{
+    background:rgba(223,184,90,0.12); border-color:var(--gold-light);
+    color:var(--gold-light); transform:translateY(-1px);
+  }
+  .cmd-action-btn svg{ flex:0 0 auto; }
+
+  .profile-card{
+    display:flex; align-items:center; gap:1.2rem; flex-wrap:wrap;
+    background:linear-gradient(180deg, rgba(22,28,42,0.85), rgba(14,18,27,0.9));
+    border:1px solid var(--gold-border); border-radius:12px;
+    padding:1.4rem 1.6rem; margin-bottom:1.8rem;
+  }
+  .profile-avatar-lg{
+    width:64px; height:64px; border-radius:50%; flex-shrink:0;
+    display:grid; place-items:center; overflow:hidden;
+    background:linear-gradient(135deg,var(--gold-light),var(--gold));
+    color:var(--ink); font-family:'Cinzel',serif; font-weight:700; font-size:1.4rem;
+  }
+  .profile-avatar-lg img{ width:100%; height:100%; object-fit:cover; }
+  .profile-card-info{ flex:1; min-width:180px; }
+  .profile-card-info .name{ font-family:'Cinzel',serif; color:var(--gold-light); font-size:1.2rem; font-weight:700; }
+  .profile-card-info .email{ color:var(--text-muted); font-size:0.88rem; margin-top:0.2rem; }
+  .profile-grid{ display:grid; grid-template-columns:1fr 1fr; gap:0 1.4rem; }
+  @media(max-width:640px){ .profile-grid{ grid-template-columns:1fr; } }
+  .profile-grid .field.full{ grid-column:1/-1; }
+
+  /* Notifications */
+  .notif-btn{ position:relative; padding:0.55rem 0.75rem !important; }
+  .notif-count{
+    position:absolute; top:-5px; right:-4px; min-width:18px; height:18px;
+    padding:0 4px; border-radius:10px; background:var(--ember); color:#fff;
+    font:700 10px 'Inter',sans-serif; display:grid; place-items:center;
+  }
+  .notification-panel{
+    position:fixed; right:1.25rem; top:74px; width:min(380px,calc(100vw - 2rem));
+    z-index:150; background:#141924; border:1px solid var(--gold-border-strong);
+    border-radius:10px; box-shadow:0 20px 50px rgba(0,0,0,0.65); display:none; max-height:70vh; overflow:auto;
+  }
+  .notification-panel.open{ display:block; animation:panelIn .18s ease; }
+  .notification-head{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:0.9rem 1.1rem; border-bottom:1px solid var(--gold-border);
+  }
+  .notification-item{ padding:0.85rem 1.1rem; border-bottom:1px solid rgba(223,184,90,0.1); cursor:pointer; }
+  .notification-item:hover{ background:rgba(223,184,90,0.06); }
+  .notification-item.unread{ border-left:3px solid var(--gold); }
+  .notification-item strong{ color:var(--parchment); display:block; font-size:0.86rem; }
+  .notification-item span{ display:block; color:var(--text-muted); font-size:0.82rem; margin-top:0.25rem; }
+  .notification-item time{ display:block; color:var(--text-dim); font-size:0.72rem; margin-top:0.3rem; }
+
+  /* Google Button */
+  .google-btn{
+    width:100%; display:flex; align-items:center; justify-content:center; gap:0.7rem;
+    padding:0.72rem 1rem; border:1px solid rgba(255,255,255,0.15); background:#fff; color:#1f2937;
+    border-radius:6px; font-family:'Inter',sans-serif; font-weight:600; font-size:0.92rem;
+    box-shadow:0 3px 10px rgba(0,0,0,0.25);
+  }
+  .google-btn:hover{ transform:translateY(-1px); box-shadow:0 5px 14px rgba(0,0,0,0.3); }
+  .google-logo{ width:18px; height:18px; }
+  .auth-switch{ display:flex; gap:0.5rem; margin-top:0.8rem; }
+  .auth-switch button{ flex:1; }
+
+  .toast{
+    position:fixed; bottom:1.6rem; left:50%; z-index:200;
+    transform:translateX(-50%) translateY(16px);
+    background:#121722; color:var(--gold-light);
+    padding:0.65rem 1.25rem; border-radius:99px;
+    font-family:'Inter', sans-serif; font-size:0.86rem; font-weight:600;
+    border:1px solid var(--gold-border-strong);
+    box-shadow:0 12px 28px rgba(0,0,0,0.55);
+    opacity:0; pointer-events:none; display:flex; align-items:center; gap:0.5rem;
+    transition:opacity 0.2s ease, transform 0.2s ease;
+  }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); pointer-events:auto; }
+  .toast.toast-error{ border-color:rgba(248,113,113,0.6); color:#fca5a5; }
+
+  .form-error{ color:#f87171; font-size:0.84rem; margin:0.4rem 0 0; min-height:1.1em; }
+  .pw-wrap{ position:relative; }
+  .pw-wrap input{ padding-right:3.6rem; }
+  .pw-toggle{
+    position:absolute; right:0.5rem; top:50%; transform:translateY(-50%);
+    background:none; border:none; color:var(--gold); font-family:'Inter', sans-serif;
+    font-size:0.75rem; font-weight:600; padding:0.3rem 0.4rem; cursor:pointer;
+  }
+
+  .search-field{ position:relative; margin:1rem 0 1.1rem; max-width:340px; }
+  .search-field input{
+    width:100%; padding:0.55rem 0.75rem 0.55rem 2.2rem; border-radius:6px;
+    border:1px solid var(--gold-border); background:#151b27;
+    color:var(--parchment); font-family:'Inter', sans-serif; font-size:0.92rem;
+  }
+  .search-field::before{
+    content:"🔍"; position:absolute; left:0.75rem; top:50%; transform:translateY(-50%);
+    font-size:0.85rem; opacity:0.65; pointer-events:none;
+  }
+
+  .skeleton-row{
+    height:54px; border-radius:8px; margin-bottom:0.7rem;
+    background:linear-gradient(100deg, rgba(223,184,90,0.06) 30%, rgba(223,184,90,0.15) 50%, rgba(223,184,90,0.06) 70%);
+    background-size:200% 100%; animation:shimmer 1.3s ease-in-out infinite;
+  }
+  @keyframes shimmer{ 0%{background-position:150% 0;} 100%{background-position:-50% 0;} }
+
+  /* Mobile menu */
+  .menu-toggle{ display:none; margin-right:0.4rem; padding:0.5rem; }
+  .sidebar-backdrop{ display:none; }
+  @media (max-width:780px){
+    .menu-toggle{ display:inline-flex; }
+    .dash-wrap{ position:relative; }
+    .dash-tabs{
+      position:fixed; top:0; left:0; z-index:210;
+      width:250px; height:100vh; min-height:0;
+      padding-top:calc(var(--topbar-h, 65px) + 0.75rem);
+      transform:translateX(-105%); transition:transform .28s ease;
+      box-shadow:12px 0 32px rgba(0,0,0,0.6);
+    }
+    .dash-tabs.open{ transform:translateX(0); }
+    .sidebar-backdrop{
+      display:block; position:fixed; inset:0; z-index:200;
+      background:rgba(8,10,15,0.7); backdrop-filter:blur(3px);
+      opacity:0; pointer-events:none; transition:opacity .28s ease;
+    }
+    .sidebar-backdrop.open{ opacity:1; pointer-events:auto; }
+    .dash-panels{ padding:1.5rem 1.25rem 4rem; }
+  }
+  body.sidebar-lock{ overflow:hidden; }
+
+  .setup-banner{
+    display:none; margin:0; padding:0.65rem 1rem; background:#7f1d1d; color:#fee2e2;
+    text-align:center; font-family:'Inter',sans-serif; font-size:0.82rem; font-weight:600;
+  }
+  .setup-banner.show{ display:block; }
+  /* ---- Scroll reveal: elements fade/slide into view as they enter the
+     viewport (wired up via IntersectionObserver in the script below). Add
+     data-reveal to any element you want animated in, and optionally
+     data-reveal-delay (ms) to stagger a group of them. ---- */
+  [data-reveal]{
+    opacity:0; transform:translateY(28px);
+    transition:opacity .7s ease, transform .7s ease;
+    transition-delay:var(--reveal-delay, 0ms);
+    will-change:opacity, transform;
+  }
+  [data-reveal].reveal-visible{ opacity:1; transform:translateY(0); }
+  @media (prefers-reduced-motion: reduce){
+    [data-reveal]{ transition:none; transform:none; opacity:1; }
+  }
+</style>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+</head>
+<body>
+<div id="scrollProgress" aria-hidden="true"></div>
+<div class="setup-banner" id="setupBanner"></div>
+<noscript><style>[data-reveal]{opacity:1 !important; transform:none !important;}</style></noscript>
+
+<!-- ============ LANDING ============ -->
+<!-- ============ LANDING ============ -->
+<div id="landing">
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark">T</div>
+      <div class="brand-text">
+        <div class="t1">BICOL UNIVERSITY – POLANGUI</div>
+        <div class="t2">TechSystems Association</div>
+      </div>
+    </div>
+    <div class="nav-actions">
+      <button class="btn btn-ghost" onclick="openModal('login')">Member Login</button>
+      <button class="btn btn-gold" onclick="openModal('apply')">Apply Now</button>
+    </div>
+  </header>
+
+  <!-- Clean, Majestic Hero (Instant flow into content, zero black screen) -->
+  <section class="hero-clean-wrap">
+    <svg class="hero-bg-art" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Crest artwork">
+      <defs>
+        <radialGradient id="hGlow" cx="50%" cy="50%" r="60%">
+          <stop offset="0%" stop-color="#dfb85a" stop-opacity="0.2"/>
+          <stop offset="60%" stop-color="#dfb85a" stop-opacity="0.03"/>
+          <stop offset="100%" stop-color="#0b0e14" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <rect width="1600" height="900" fill="#0b0e14"/>
+      <rect width="1600" height="900" fill="url(#hGlow)"/>
+      <g stroke="#dfb85a" stroke-opacity="0.18" stroke-width="1.5">
+        <line x1="140" y1="150" x2="320" y2="260"/>
+        <line x1="320" y1="260" x2="260" y2="420"/>
+        <line x1="1260" y1="170" x2="1420" y2="280"/>
+        <line x1="1420" y1="280" x2="1360" y2="440"/>
+        <line x1="220" y1="700" x2="400" y2="780"/>
+        <line x1="1240" y1="740" x2="1400" y2="660"/>
+      </g>
+      <circle cx="800" cy="450" r="88" fill="#151a26" stroke="#dfb85a" stroke-width="3"/>
+      <g transform="translate(760,410) scale(3.3)" fill="none" stroke="#dfb85a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 3v14M6 8l-3 2 3 7h6M18 8l3 2-3 7h-6"/>
+        <path d="M3 10h6M15 10h6"/>
+        <circle cx="12" cy="20" r="1" fill="#dfb85a" stroke="none"/>
+      </g>
+    </svg>
+    <div class="hero-scrim"></div>
+    <div class="torch left"><div class="flame"></div></div>
+    <div class="torch right"><div class="flame"></div></div>
+
+    <div class="hero-content">
+      <div class="crest-row">
+        <span class="rule"></span>
+        <span class="eyebrow">External Affairs Committee</span>
+        <span class="rule"></span>
+      </div>
+      <h1>The External Envoys</h1>
+      <p class="sub">Representing the TechSystems Association beyond campus walls. Building institutional bridges, securing bilateral MOAs, and forging enduring alliances across universities and the tech industry.</p>
+      <div class="hero-actions">
+        <button class="btn btn-gold" onclick="openModal('apply')">Apply to External Affairs</button>
+        <button class="btn btn-ghost" onclick="openModal('login')">Member Login</button>
+      </div>
+      <div class="scroll-cue">▾ SCROLL TO EXPLORE THE ROLE OF TSA ENVOYS ▾</div>
+    </div>
+  </section>
+
+  <!-- Qualitative Overview Strip (No uncounted numbers) -->
+  <div class="resp-strip-wrap">
+    <div class="resp-strip">
+      <div class="resp-item">
+        <span class="resp-icon">✉️</span>
+        <span class="resp-title">Diplomatic Letters</span>
+        <span class="resp-desc">Authoring and hand-delivering formal invitations &amp; inquiries.</span>
+      </div>
+      <div class="resp-item">
+        <span class="resp-icon">🏛️</span>
+        <span class="resp-title">Campus Delegations</span>
+        <span class="resp-desc">Representing TSA in executive offices.</span>
+      </div>
+      <div class="resp-item">
+        <span class="resp-icon">🤝</span>
+        <span class="resp-title">MOA Governance</span>
+        <span class="resp-desc">Securing bilateral Memoranda of Agreement for students.</span>
+      </div>
+      <div class="resp-item">
+        <span class="resp-icon">🌐</span>
+        <span class="resp-title">Guild Alliances</span>
+        <span class="resp-desc">Co-hosting tech summits, hackathons &amp; regional congresses.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charge Section -->
+  <section id="charge">
+    <div class="section-inner charge-grid">
+      <div class="seal-badge-interactive" id="diplomaticSeal" title="Diplomatic Seal of External Affairs" data-reveal style="--reveal-delay:0ms;">
+        <div class="seal-icon-wrap">
+          <div class="orbital-ring ring-outer"></div>
+          <div class="orbital-ring ring-inner"></div>
+          <div class="seal-core">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+              <path d="M12 3v14M6 8l-3 2 3 7h6M18 8l3 2-3 7h-6" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M3 10h6M15 10h6" stroke-linecap="round"/>
+              <circle cx="12" cy="20" r="1.2" fill="currentColor" stroke="none"/>
+            </svg>
+          </div>
+        </div>
+        <p class="seal-caption" data-reveal style="--reveal-delay:40ms;">Manages external outreach—delivering letters, visiting offices, and building partnerships with organizations and schools.</p>
+      </div>
+      <div class="charge-text">
+        <div class="crest-tag" data-reveal style="--reveal-delay:80ms;">
+          <span class="pulse-dot"></span>
+          <span class="eyebrow">External Affairs Committee</span>
+        </div>
+        <h2 data-reveal style="--reveal-delay:160ms;">The Royal Envoys</h2>
+        <p data-reveal style="--reveal-delay:240ms;">Beyond the guild's borders lie allies, opportunities, and new territories to explore. The <strong>External Affairs Committee</strong> builds and maintains relationships with organizations, institutions, and external partners while representing TSA with confidence and professionalism. Their mission is to open doors and strengthen the guild's alliances.</p>
+        <p data-reveal style="--reveal-delay:320ms;">For members who enjoy networking, communication, and building meaningful partnerships.</p>
+        <div class="envoys-badge-pills" data-reveal style="--reveal-delay:400ms;">
+          <span class="envoy-pill">🌐 Institutional Diplomacy</span>
+          <span class="envoy-pill">📜 MOA Ratification</span>
+          <span class="envoy-pill">🏛️ Campus Delegations</span>
+          <span class="envoy-pill">🤝 Corporate Alliances</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Role of TSA: Four Pillars Codex & Interactive Workflow -->
+  <section id="quests">
+    <div class="section-inner">
+      <div class="section-head">
+        <span class="eyebrow">Duties of the Committee</span>
+        <h2>The Role of TSA: Four Core Responsibilities</h2>
+        <p>All External Affairs envoys are trained across every responsibility below. Click each pillar to inspect envoy missions in action.</p>
+      </div>
+
+      <!-- Interactive Pillar Selector Tabs -->
+      <div class="role-tabs-bar" id="roleTabsBar">
+        <button class="role-tab active" data-pillar="outreach" onclick="selectRolePillar('outreach')">
+          <span class="role-tab-icon">✉️</span>
+          <span class="role-tab-text">Diplomatic Outreach</span>
+          <span class="role-tab-hint">Official Letters</span>
+        </button>
+        <button class="role-tab" data-pillar="delegations" onclick="selectRolePillar('delegations')">
+          <span class="role-tab-icon">🏛️</span>
+          <span class="role-tab-text">Campus Delegations</span>
+          <span class="role-tab-hint">On-Site Presence</span>
+        </button>
+        <button class="role-tab" data-pillar="moa" onclick="selectRolePillar('moa')">
+          <span class="role-tab-icon">🤝</span>
+          <span class="role-tab-text">MOA Governance</span>
+          <span class="role-tab-hint">Legal Alliances</span>
+        </button>
+        <button class="role-tab" data-pillar="alliances" onclick="selectRolePillar('alliances')">
+          <span class="role-tab-icon">🌐</span>
+          <span class="role-tab-text">Guild Alliances</span>
+          <span class="role-tab-hint">Joint Summits</span>
+        </button>
+      </div>
+
+      <!-- Dynamic Role Detail Showcase Stage -->
+      <div class="role-showcase-wrap">
+        <div class="role-showcase-stage" id="roleShowcaseStage">
+          <!-- Rendered dynamically by selectRolePillar() -->
+        </div>
+      </div>
+
+      <!-- Live Interactive Mission Simulator -->
+      <div class="simulator-card">
+        <div class="sim-header">
+          <div class="sim-status">
+            <span class="live-dot pulse"></span>
+            <span class="eyebrow">Interactive Envoy Simulator</span>
+          </div>
+          <span class="sim-tag">Pipeline: Bilateral Alliance Dispatch</span>
+        </div>
+        <div class="sim-body">
+          <div class="sim-info">
+            <div class="sim-meta-item">
+              <span class="sim-meta-label">Mission Focus</span>
+              <strong class="sim-meta-val" id="simMissionFocus">Regional Tech Summit MOA</strong>
+            </div>
+            <div class="sim-meta-item">
+              <span class="sim-meta-label">Designated Envoy</span>
+              <strong class="sim-meta-val">External Affairs Committee Delegation</strong>
+            </div>
+            <div class="sim-meta-item">
+              <span class="sim-meta-label">Current Phase</span>
+              <strong class="sim-meta-val" id="simPhaseLabel">Standby · Ready to Dispatch</strong>
+            </div>
+          </div>
+
+          <!-- Progress Stepper -->
+          <div class="sim-progress-track">
+            <div class="sim-progress-bar" id="simProgressBar"></div>
+          </div>
+
+          <div class="sim-steps" id="simStepsList">
+            <div class="sim-step" id="simStep1">
+              <span class="sim-step-num">1</span>
+              <div class="sim-step-info">
+                <strong>Draft Letter &amp; MOA</strong>
+                <span>Formal institutional invitation</span>
+              </div>
+            </div>
+            <div class="sim-step" id="simStep2">
+              <span class="sim-step-num">2</span>
+              <div class="sim-step-info">
+                <strong>Council Endorsement</strong>
+                <span>Dean &amp; Adviser verification</span>
+              </div>
+            </div>
+            <div class="sim-step" id="simStep3">
+              <span class="sim-step-num">3</span>
+              <div class="sim-step-info">
+                <strong>Delegation Visit</strong>
+                <span>Hand-delivery to partner office</span>
+              </div>
+            </div>
+            <div class="sim-step" id="simStep4">
+              <span class="sim-step-num">4</span>
+              <div class="sim-step-info">
+                <strong>Bilateral Ratification</strong>
+                <span>Alliance sealed &amp; archived</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="sim-actions">
+            <button class="btn btn-gold" id="simLaunchBtn" onclick="runMissionSimulation()">
+              <span>⚡ Dispatch Envoy Mission (Live Simulation)</span>
+            </button>
+            <span class="sim-feedback" id="simFeedback">Click to watch an external liaison mission progress through all 4 stages in real-time.</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section class="cta-banner">
+    <div class="section-inner">
+      <h2>Answer the Call</h2>
+      <p>Membership is open to any TSA member ready to represent the guild beyond our walls.</p>
+      <button class="btn btn-gold" onclick="openModal('apply')">Apply to External Affairs</button>
+    </div>
+  </section>
+
+  <footer>
+    <div class="rule"></div>
+    TechSystems Association — Bicol University, Polangui Campus<br>
+    tsa.bupolangui@bicol-u.edu.ph
+  </footer>
+</div>
+
+<div id="homepage">
+  <header class="topbar">
+    <div class="brand">
+      <button class="btn btn-ghost menu-toggle" onclick="toggleSidebar()" aria-label="Open menu">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
+      <div class="brand-mark">T</div>
+      <div class="brand-text">
+        <div class="t1">BICOL UNIVERSITY – POLANGUI</div>
+        <div class="t2">TechSystems Association</div>
+      </div>
+    </div>
+    <div class="nav-actions">
+      <div class="header-user">
+        <button class="btn btn-ghost notif-btn" onclick="toggleNotifications()" aria-label="Notifications">🔔<span class="notif-count" id="notifCount" style="display:none">0</span></button>
+        <span class="status-pill" id="roleBadge"></span>
+        <button class="btn btn-ghost" onclick="logout()">Log Out</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="dash-wrap">
+    <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebar(false)"></div>
+    <nav class="dash-tabs" id="dashTabs">
+      <button class="tab-btn active" data-tab="tasks" onclick="showPanel('tasks')"><span><span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span> My Tasks</span><span class="tab-badge" id="taskBadge" style="display:none"></span></button>
+      <button class="tab-btn" data-tab="documents" onclick="showPanel('documents')"><span><span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/></svg></span> MOA Library</span><span class="tab-badge" id="docBadge" style="display:none"></span></button>
+      <button class="tab-btn" data-tab="partners" onclick="showPanel('partners')"><span><span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> Partners</span></button>
+      <button class="tab-btn admin-only" data-tab="members" onclick="showPanel('members')"><span><span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span> Manage Members</span></button>
+      <button class="tab-btn admin-only" data-tab="assign" onclick="showPanel('assign')"><span><span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M12 5l7 3-7 3"/></svg></span> Assign Tasks</span><span class="tab-badge" id="assignBadge" style="display:none"></span></button>
+      <button class="tab-btn admin-only" data-tab="applications" onclick="showPanel('applications')"><span><span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 6 10-6"/></svg></span> Applications</span><span class="tab-badge" id="applicationBadge" style="display:none"></span></button>
+      <hr class="tab-divider">
+      <button class="tab-btn" data-tab="profile" onclick="showPanel('profile')"><span><span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-7 8-7s8 3 8 7"/></svg></span> My Profile</span></button>
+    </nav>
+
+    <div class="dash-content">
+      <!-- Animated constellation canvas — decorative dashboard background -->
+      <canvas id="dashBgCanvas" aria-hidden="true" style="position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;opacity:0.4;"></canvas>
+
+      <!-- ===== COMMAND CENTER HERO BANNER ===== -->
+      <div class="cmd-hero" style="position:relative;z-index:1;">
+        <!-- top row: greeting + id card -->
+        <div class="cmd-hero-top">
+          <div class="cmd-hero-text">
+            <span class="eyebrow" id="cmdGreetingLabel">Member Homepage</span>
+            <h1 id="welcomeName">Welcome back, Envoy</h1>
+            <p id="welcomeSub">The guild hall is open. Here's where things stand.</p>
+          </div>
+          <div class="id-lanyard">
+            <div class="id-lanyard-strap"></div>
+            <div class="id-card" id="idCard">
+              <div class="id-card-clip"></div>
+              <div class="id-card-avatar" id="idCardAvatar">T</div>
+              <div class="id-card-name" id="idCardName">Envoy</div>
+              <div class="id-card-role" id="idCardRole">Member</div>
+              <div class="id-card-org">TechSystems Association<br>External Affairs Committee</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- ===== END COMMAND CENTER ===== -->
+
+      <div class="dash-panels">
+      <!-- MY TASKS -->
+      <section id="panel-tasks" class="dash-panel active">
+        <h2>My Tasks</h2>
+        <p class="panel-hint">Quests assigned to you by the Council. Submit your work once it's ready.</p>
+        <div id="tasksList"><div class="skeleton-row"></div><div class="skeleton-row"></div></div>
+      </section>
+
+
+      <!-- PARTNER ORGANIZATIONS -->
+      <section id="panel-partners" class="dash-panel">
+        <h2>Partner Organizations</h2>
+        <p class="panel-hint">TSA's current allies. Copy contact info as needed for outreach.</p>
+        <div class="search-field"><input type="text" id="partnerSearch" placeholder="Search partner organizations…" oninput="renderPartners()"></div>
+        <div id="partnersList"><div class="skeleton-row"></div><div class="skeleton-row"></div></div>
+
+        <div id="partnerAdminTools" class="admin-only" style="display:none;">
+          <button class="btn btn-ghost" onclick="toggleForm('partnerForm')">+ Add Partner Organization</button>
+          <div class="inline-form" id="partnerForm" style="display:none;">
+            <input type="hidden" id="partnerEditId" value="">
+            <div class="field"><label>Organization name</label><input type="text" id="partnerName" placeholder="e.g. PNP Polangui"></div>
+            <div class="field"><label>Contact person</label><input type="text" id="partnerContact" placeholder="Name / role"></div>
+            <div class="field"><label>Email</label><input type="email" id="partnerEmail" placeholder="contact@org.ph"></div>
+            <div class="field"><label>Phone</label><input type="text" id="partnerPhone" placeholder="09XXXXXXXXX"></div>
+            <div class="field"><label>Notes</label><textarea id="partnerNotes" placeholder="Anything worth remembering about this partnership"></textarea></div>
+            <button class="btn btn-gold" id="partnerSaveBtn" onclick="savePartnerForm()">Save Partner</button>
+            <p class="form-note" id="partnerFormMsg"></p>
+          </div>
+        </div>
+      </section>
+
+      <!-- MOA LIBRARY -->
+      <section id="panel-documents" class="dash-panel">
+        <div class="dashboard-toolbar">
+          <div>
+            <h2>MOA Library</h2>
+            <p class="panel-hint" style="margin-bottom:0;">Reference and final MOAs organized by event. Members can view/download; only admins can upload.</p>
+          </div>
+          <div class="filter-row">
+            <button class="filter-chip active" id="docFilterAll" onclick="setDocFilter('all')">All</button>
+            <button class="filter-chip" id="docFilterReference" onclick="setDocFilter('reference')">Reference</button>
+            <button class="filter-chip" id="docFilterFinal" onclick="setDocFilter('final')">Final</button>
+          </div>
+        </div>
+        <div class="search-field"><input type="text" id="docSearch" placeholder="Search event or MOA title…" oninput="renderDocuments()"></div>
+        <div id="documentsList"><div class="skeleton-row"></div><div class="skeleton-row"></div></div>
+
+        <div class="admin-only" style="margin-top:2rem;">
+          <hr class="rule-line">
+          <h3>Upload MOA</h3>
+          <p class="panel-hint">Use <strong>Reference</strong> for templates/examples members may consult. Use <strong>Final</strong> only for the approved MOA.</p>
+          <div class="upload-zone" id="moaDropZone">
+            <div style="margin-bottom:.5rem;display:flex;justify-content:center;"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M12 18v-6M9.5 14.5L12 12l2.5 2.5"/></svg></div>
+            <p style="margin:.2rem 0;color:#d9cba0;">Choose a PDF/DOC/DOCX file or drag it here.</p>
+            <input type="file" id="moaFile" accept=".pdf,.doc,.docx,.odt" onchange="updateMoaFileLabel()">
+            <p class="form-note" id="moaFileLabel">No file selected.</p>
+            <p class="form-note" style="opacity:.7;">Max 700KB per file (stored free, no paid storage plan needed).</p>
+          </div>
+          <div class="field"><label>Event / partnership</label><input id="moaEvent" placeholder="e.g. Tech Summit 2026 with XYZ Organization"></div>
+          <div class="field"><label>MOA title</label><input id="moaTitle" placeholder="e.g. Memorandum of Agreement"></div>
+          <div class="field"><label>Document type</label>
+            <select id="moaType"><option value="reference">Reference MOA</option><option value="final">Final / Approved MOA</option></select>
+          </div>
+          <div class="field"><label>Notes (optional)</label><textarea id="moaNotes" placeholder="What should members know about this document?"></textarea></div>
+          <div class="upload-progress"><span id="moaProgress"></span></div>
+          <button class="btn btn-gold" onclick="uploadMoa()">Upload to MOA Library</button>
+          <p class="form-note" id="moaMsg"></p>
+        </div>
+      </section>
+
+      <!-- MANAGE MEMBERS (admin) -->
+      <section id="panel-members" class="dash-panel admin-only">
+        <h2>Manage Members</h2>
+        <p class="panel-hint">Grant or revoke access, change roles, or add a new envoy to the roster.</p>
+        <div class="search-field"><input type="text" id="memberSearch" placeholder="Search by name or email…" oninput="renderMembers()"></div>
+        <div id="membersList"><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div></div>
+
+        <h3>Add New Envoy</h3>
+        <div class="field"><label>Email</label><input type="email" id="newMemberEmail" placeholder="name@bicol-u.edu.ph"></div>
+        <div class="field"><label>Role</label>
+          <select id="newMemberRole"><option value="member">Member</option><option value="admin">Admin</option></select>
+        </div>
+        <button class="btn btn-gold" onclick="addMember()">Add to Roster</button>
+        <p class="form-note" id="addMemberMsg"></p>
+      </section>
+
+      <!-- ASSIGN TASKS (admin) -->
+      <section id="panel-assign" class="dash-panel admin-only">
+        <h2>Assign a Task</h2>
+        <p class="panel-hint">Hand a quest to a member of the committee.</p>
+        <div class="field"><label>Title</label><input type="text" id="taskTitle" placeholder="e.g. Write MOA for Tech Summit 2026"></div>
+        <div class="field"><label>Assign to</label><select id="taskAssignee"></select></div>
+        <div class="field"><label>Event / partnership</label><input type="text" id="taskEvent" placeholder="e.g. Tech Summit 2026"></div>
+        <div class="field"><label>Priority</label><select id="taskPriority"><option value="normal">Normal</option><option value="high">High</option><option value="low">Low</option></select></div>
+        <div class="field"><label>Description</label><textarea id="taskDesc" placeholder="What needs to be done"></textarea></div>
+        <div class="field"><label>Due date</label><input type="date" id="taskDue"></div>
+        <div class="field"><label>Reference MOA (optional)</label><select id="taskMoaRef"><option value="">No reference MOA</option></select></div>
+        <button class="btn btn-gold" onclick="createTask()">Assign Task &amp; Notify</button>
+        <p class="form-note" id="taskMsg"></p>
+
+        <h3>All Tasks</h3>
+        <div id="allTasksList"><div class="skeleton-row"></div><div class="skeleton-row"></div></div>
+      </section>
+
+      <!-- APPLICATIONS (admin) -->
+      <section id="panel-applications" class="dash-panel admin-only">
+        <h2>Membership Applications</h2>
+        <p class="panel-hint">Review requests submitted from the public Apply Now form. Accepting an applicant adds them to the member roster.</p>
+        <div class="search-field"><input type="text" id="applicationSearch" placeholder="Search applicants…" oninput="renderApplications()"></div>
+        <div id="applicationsList"><div class="skeleton-row"></div><div class="skeleton-row"></div></div>
+      </section>
+
+      <!-- MY PROFILE -->
+      <section id="panel-profile" class="dash-panel">
+        <h2>My Profile</h2>
+        <p class="panel-hint">Everyone can update their own info and password.</p>
+
+        <div class="profile-card">
+          <div class="profile-avatar-lg" id="profileAvatarBig">T</div>
+          <div class="profile-card-info">
+            <div class="name" id="profileCardName">—</div>
+            <div class="email" id="profileCardEmail">—</div>
+            <span class="status-pill" id="profileCardRole"></span>
+          </div>
+        </div>
+
+        <div class="profile-grid">
+          <div class="field full"><label>Email</label><input type="text" id="profileEmail" disabled></div>
+          <div class="field"><label>Display name</label><input type="text" id="profileName" placeholder="Your name"></div>
+          <div class="field"><label>Year & course</label><input type="text" id="profileCourse" placeholder="e.g. 4th Year, BSIT"></div>
+          <div class="field full"><label>Short bio</label><textarea id="profileBio" placeholder="A line or two about yourself"></textarea></div>
+        </div>
+        <button class="btn btn-gold" onclick="saveProfile()">Save Changes</button>
+        <p class="form-note" id="profileMsg"></p>
+
+        <hr class="rule-line">
+        <h3>Change Password</h3>
+        <div class="profile-grid">
+          <div class="field full"><label>Current password</label><input type="password" id="pwCurrent"></div>
+          <div class="field"><label>New password</label><input type="password" id="pwNew"></div>
+          <div class="field"><label>Confirm new password</label><input type="password" id="pwConfirm"></div>
+        </div>
+        <button class="btn btn-ghost" onclick="changePassword()">Update Password</button>
+        <p class="form-note" id="pwMsg"></p>
+      </section>
+    </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ LOGIN MODAL ============ -->
+<div class="overlay" id="loginOverlay">
+  <div class="scroll-modal">
+    <button class="modal-close" onclick="closeModal('login')">✕</button>
+    <h3>Member Login</h3>
+    <p class="modal-sub">Present your credentials to enter the guild hall.</p>
+    <form id="loginForm" onsubmit="handleLogin(event)">
+      <div class="field">
+        <label for="loginEmail">Email</label>
+        <input type="email" id="loginEmail" required placeholder="you@bicol-u.edu.ph">
+      </div>
+      <div class="field">
+        <label for="loginPassword">Password</label>
+        <div class="pw-wrap">
+          <input type="password" id="loginPassword" required placeholder="••••••••">
+          <button type="button" class="pw-toggle" onclick="togglePw('loginPassword', this)">Show</button>
+        </div>
+      </div>
+      <p class="form-error" id="loginError"></p>
+      <button type="submit" class="seal-submit" id="loginSubmitBtn">Enter the Guild Hall</button>
+    </form>
+    <div class="oauth-divider">or</div>
+    <button type="button" class="google-btn" onclick="signInWithGoogle()">
+      <svg class="google-logo" viewBox="0 0 24 24"><path fill="#4285F4" d="M21.6 12.23c0-.72-.06-1.41-.18-2.08H12v3.94h5.38a4.6 4.6 0 0 1-2 3.02v2.51h3.24c1.9-1.75 2.98-4.33 2.98-7.39z"/><path fill="#34A853" d="M12 22c2.7 0 4.97-.89 6.63-2.38l-3.24-2.51c-.9.6-2.05.95-3.39.95-2.6 0-4.8-1.76-5.59-4.12H3.06v2.59A10 10 0 0 0 12 22z"/><path fill="#FBBC05" d="M6.41 13.94A6.01 6.01 0 0 1 6.1 12c0-.67.12-1.33.31-1.94V7.47H3.06A10 10 0 0 0 2 12c0 1.63.39 3.17 1.06 4.53l3.35-2.59z"/><path fill="#EA4335" d="M12 5.94c1.47 0 2.79.51 3.83 1.51l2.87-2.87C16.96 2.87 14.69 2 12 2a10 10 0 0 0-8.94 5.47l3.35 2.59C7.2 7.7 9.4 5.94 12 5.94z"/></svg>
+      Continue with Google
+    </button>
+    <p class="oauth-hint">Google sign-in is verified by Firebase Authentication. Your email must already be on the TSA roster.</p>
+    <div class="auth-switch">
+      <button type="button" class="btn btn-ghost btn-sm" onclick="openSignup()">Create password account</button>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="sendPasswordReset()">Forgot password?</button>
+    </div>
+    <p class="form-note">Not a member yet? <button class="switch-link" onclick="switchModal('apply')">Apply here</button></p>
+  </div>
+</div>
+
+
+<!-- ============ CREATE ACCOUNT MODAL ============ -->
+<div class="overlay" id="signupOverlay">
+  <div class="scroll-modal">
+    <button class="modal-close" onclick="closeModal('signup')">✕</button>
+    <h3>Create Your Firebase Account</h3>
+    <p class="modal-sub">Your email must already be approved on the TSA roster.</p>
+    <form id="signupForm" onsubmit="handleSignup(event)">
+      <div class="field"><label>Email</label><input type="email" id="signupEmail" required placeholder="you@bicol-u.edu.ph"></div>
+      <div class="field"><label>Password</label><input type="password" id="signupPassword" minlength="6" required placeholder="At least 6 characters"></div>
+      <div class="field"><label>Confirm password</label><input type="password" id="signupConfirm" minlength="6" required></div>
+      <p class="form-error" id="signupError"></p>
+      <button class="seal-submit" type="submit" id="signupBtn">Create Account</button>
+    </form>
+    <p class="form-note">Already have an account? <button class="switch-link" onclick="switchModal('login')">Log in</button></p>
+  </div>
+</div>
+
+<!-- ============ APPLY MODAL ============ -->
+<div class="overlay" id="applyOverlay">
+  <div class="scroll-modal" id="applyModalBody">
+    <button class="modal-close" onclick="closeModal('apply')">✕</button>
+    <div id="applyFormWrap">
+      <h3>Apply to the External Committee</h3>
+      <p class="modal-sub">Send your scroll of intent to the Royal Envoys.</p>
+      <form id="applyForm" onsubmit="handleApply(event)">
+        <div class="field">
+          <label for="applyName">Full name</label>
+          <input type="text" id="applyName" required placeholder="Your name">
+        </div>
+        <div class="field">
+          <label for="applyYear">Year & course</label>
+          <input type="text" id="applyYear" required placeholder="e.g. 3rd Year, BSIT">
+        </div>
+        <div class="field">
+          <label for="applyEmail">Email</label>
+          <input type="email" id="applyEmail" required placeholder="you@bicol-u.edu.ph">
+        </div>
+        <div class="field">
+          <label for="applyWhy">Why do you want to join?</label>
+          <textarea id="applyWhy" required placeholder="A few sentences about why you'd make a good envoy..."></textarea>
+        </div>
+        <button type="submit" class="seal-submit" id="applySubmitBtn">
+          <span>Seal &amp; Send</span>
+        </button>
+      </form>
+      <p class="form-note">Already a member? <button class="switch-link" onclick="switchModal('login')">Log in instead</button></p>
+    </div>
+    <div id="applyConfirm" style="display:none;">
+      <div class="confirm-block">
+        <div class="big-seal">✓</div>
+        <h3 style="margin-bottom:0.4rem;">Your Scroll Has Been Sent</h3>
+        <p class="modal-sub" style="margin-bottom:1.4rem;">Your application has been recorded for the External Affairs Committee. An admin can review it and grant roster access before you can log in.</p>
+        <button class="btn btn-gold btn-wide" onclick="closeModal('apply')">Return to the Gates</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+<div class="notification-panel" id="notificationPanel"></div>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+  import {
+    getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword,
+    signInWithPopup, GoogleAuthProvider, signOut, sendPasswordResetEmail
+  } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+  import {
+    getFirestore, collection, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc,
+    query, where, orderBy, onSnapshot, serverTimestamp, getDocs
+  } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+  // Cloud Storage removed: Firebase now requires the paid Blaze plan for Storage,
+  // so MOA files are instead embedded as base64 directly inside Firestore documents.
+  // This stays entirely on the free Spark plan. Files are capped at ~700KB (see
+  // uploadMoa below) to stay under Firestore's 1MiB per-document limit.
+
+  // ============================================================
+  // FIREBASE CONFIG — replace these placeholders with your
+  // Firebase Web App config from Project settings > Your apps.
+  // ============================================================
+ const firebaseConfig = {
+  apiKey: "AIzaSyC8v5jO4k3stlWLeV8tdxAejniCgWH9cCY",
+  authDomain: "tsa-external-envoys.firebaseapp.com",
+  projectId: "tsa-external-envoys",
+  storageBucket: "tsa-external-envoys.firebasestorage.app",
+  messagingSenderId: "574131845122",
+  appId: "1:574131845122:web:0e5be07325570839dc0f1b"
+};
+
+  const firebaseConfigured = !Object.values(firebaseConfig).some(v => String(v).startsWith("YOUR_"));
+
+  // EmailJS config — sends task-assignment emails directly (silently) via a
+  // connected Gmail account, no paid backend or mail client required.
+  const EMAILJS_SERVICE_ID = "service_y323jrh";
+  const EMAILJS_TEMPLATE_ID = "template_f8rnf17";
+  const EMAILJS_PUBLIC_KEY = "vhvb8uqMserrufl1U";
+  if(window.emailjs) emailjs.init({publicKey: EMAILJS_PUBLIC_KEY});
+  async function sendTaskEmail(toEmail, toName, taskTitle, taskDescription, taskDue){
+    if(!window.emailjs) throw new Error("Email service failed to load.");
+    const message = `Hello ${toName},\n\nYou have been assigned the following task for the External Affairs Committee:\n\nTask: ${taskTitle}\nDetails: ${taskDescription || "See portal"}\nDue Date: ${taskDue || "N/A"}\n\nAccess portal: https://tsa-external-envoys.web.app`;
+    return emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+      to_email: toEmail,
+      subject: `[TSA Task] ${taskTitle}`,
+      message
+    });
+  }
+  let app, auth, db, googleProvider;
+  let currentUser = null;
+  let currentProfile = null;
+  let unsubscribers = [];
+  let docFilter = "all";
+  let realtime = {tasks:[], partners:[], applications:[], documents:[], notifications:[], members:[]};
+
+  if(firebaseConfigured){
+    app = initializeApp(firebaseConfig);
+    auth = getAuth(app);
+    db = getFirestore(app);
+    googleProvider = new GoogleAuthProvider();
+    googleProvider.setCustomParameters({prompt:"select_account"});
+  } else {
+    const banner = document.getElementById("setupBanner");
+    banner.textContent = "Firebase is not configured yet. Add your Firebase Web App config to enable secure login, shared data, MOA storage, and email notifications.";
+    banner.classList.add("show");
+  }
+
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  // Opening/downloading a raw data: URL directly (e.g. via <a href target=_blank>)
+  // is unreliable in modern browsers for large files — some block the top-level
+  // navigation, others mangle it into a search query instead of rendering it.
+  // Converting to a Blob object URL at click time avoids all of that.
+  function dataUrlToBlobUrl(dataUrl, contentType){
+    const commaIdx = dataUrl.indexOf(",");
+    const meta = dataUrl.slice(5, commaIdx); // strip "data:"
+    const isBase64 = /;base64$/.test(meta.split(";").length>1 ? meta : meta+";");
+    const payload = dataUrl.slice(commaIdx+1);
+    const mime = contentType || meta.split(";")[0] || "application/octet-stream";
+    let bytes;
+    if(isBase64 || /;base64/.test(meta)){
+      const binary = atob(payload);
+      bytes = new Uint8Array(binary.length);
+      for(let i=0;i<binary.length;i++) bytes[i]=binary.charCodeAt(i);
+    } else {
+      bytes = new TextEncoder().encode(decodeURIComponent(payload));
+    }
+    return URL.createObjectURL(new Blob([bytes],{type:mime}));
+  }
+  window.viewMoaDoc=(id)=>{
+    const d=realtime.documents.find(x=>x.id===id);
+    if(!d||!d.downloadUrl)return;
+    window.open(dataUrlToBlobUrl(d.downloadUrl,d.contentType),"_blank","noopener");
+  };
+  window.downloadMoaDoc=(id)=>{
+    const d=realtime.documents.find(x=>x.id===id);
+    if(!d||!d.downloadUrl)return;
+    const url=dataUrlToBlobUrl(d.downloadUrl,d.contentType);
+    const a=document.createElement("a");a.href=url;a.download=d.fileName||"document";document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),10000);
+  };
+  const showToast = (msg,type="ok") => {
+    let t=$("toast"); if(!t){t=document.createElement("div");t.id="toast";t.className="toast";document.body.appendChild(t);}
+    t.innerHTML=`<span class="toast-icon">${type==="error"?"⚠":"✓"}</span><span>${esc(msg)}</span>`;
+    t.className="toast show"+(type==="error"?" toast-error":"");
+    clearTimeout(window._toastTimer); window._toastTimer=setTimeout(()=>t.classList.remove("show"),2600);
+  };
+  window.showToast=showToast;
+
+  function friendlyAuthError(e){
+    const c=e?.code||"";
+    const map={
+      "auth/invalid-credential":"Email or password is incorrect.",
+      "auth/user-not-found":"No Firebase account exists for that email yet.",
+      "auth/wrong-password":"Email or password is incorrect.",
+      "auth/email-already-in-use":"That email already has a Firebase account. Try logging in.",
+      "auth/weak-password":"Use a stronger password with at least 6 characters.",
+      "auth/popup-closed-by-user":"Google sign-in was cancelled.",
+      "auth/popup-blocked":"Your browser blocked the Google sign-in popup. Allow popups and try again.",
+      "auth/too-many-requests":"Too many attempts. Please wait a moment and try again.",
+      "auth/network-request-failed":"Network error. Check your internet connection.",
+      "auth/unauthorized-domain":"This domain or file:/// origin is not authorized in Firebase Auth. Please access via the live deployed site at https://tsa-external-envoys.web.app or http://localhost:5000."
+    };
+    return map[c] || e?.message || "Authentication failed.";
+  }
+
+  async function getProfile(uid){
+    const snap=await getDoc(doc(db,"users",uid));
+    return snap.exists()?{id:snap.id,...snap.data()}:null;
+  }
+  async function rosterByEmail(email){
+    if(!email) return null;
+    const normalized = email.trim().toLowerCase();
+    try {
+      let direct = await getDoc(doc(db, "roster", normalized));
+      if(direct.exists()) return { id: direct.id, ...direct.data() };
+      const sanitized = normalized.replace(/[^a-z0-9]/g, "_");
+      direct = await getDoc(doc(db, "roster", sanitized));
+      if(direct.exists()) return { id: direct.id, ...direct.data() };
+      const q = query(collection(db, "roster"), where("email", "==", normalized));
+      const snap = await getDocs(q);
+      if(!snap.empty) return { id: snap.docs[0].id, ...snap.docs[0].data() };
+    } catch(err) {
+      console.warn("rosterByEmail error:", err);
+    }
+    return null;
+  }
+  function emailKey(email){ return email.trim().toLowerCase(); }
+
+  // ---------- UI ----------
+  window.openModal = which => { const x=$(which+"Overlay"); if(x)x.classList.add("open"); };
+  window.closeModal = which => { const x=$(which+"Overlay"); if(x)x.classList.remove("open"); };
+  window.switchModal = target => { document.querySelectorAll(".overlay.open").forEach(x=>x.classList.remove("open")); openModal(target); };
+  window.toggleForm = id => { const x=$(id); if(x)x.style.display=x.style.display==="none"?"block":"none"; };
+  window.togglePw = (id,btn) => { const x=$(id); const showing=x.type==="text"; x.type=showing?"password":"text"; btn.textContent=showing?"Show":"Hide"; };
+  window.openSignup=()=>{closeModal("login");openModal("signup");};
+  window.showPanel=name=>{
+    document.querySelectorAll(".dash-panel").forEach(p=>p.classList.remove("active"));
+    document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
+    const p=$("panel-"+name); if(!p)return; p.classList.add("active");
+    const b=document.querySelector(`.tab-btn[data-tab="${name}"]`); if(b)b.classList.add("active");
+    if(!window.matchMedia("(prefers-reduced-motion: reduce)").matches){
+      p.classList.add("panel-enter"); requestAnimationFrame(()=>requestAnimationFrame(()=>p.classList.remove("panel-enter")));
+    }
+    if(name==="documents") renderDocuments();
+    if(name==="tasks") renderTasks();
+    window.toggleSidebar(false);
+  };
+
+  window.toggleSidebar=(force)=>{
+    const tabs=$("dashTabs"), backdrop=$("sidebarBackdrop");
+    if(!tabs) return;
+    const open = force!==undefined ? force : !tabs.classList.contains("open");
+    tabs.classList.toggle("open", open);
+    if(backdrop) backdrop.classList.toggle("open", open);
+    document.body.classList.toggle("sidebar-lock", open);
+  };
+
+  window.toggleNotifications=()=>{
+    const panel=$("notificationPanel"); if(!panel)return;
+    panel.classList.toggle("open"); renderNotifications();
+  };
+
+  function initials(name,email){ return (name||email||"T").split(/\s+/).slice(0,2).map(x=>x[0]).join("").toUpperCase(); }
+  function renderUserHeader(){
+    $("roleBadge").textContent=currentProfile?.role==="admin"?"COUNCIL ADMIN":"ENVOY";
+    const idAv=$("idCardAvatar");
+    if(idAv){
+      const fallback=initials(currentProfile?.displayName,currentUser?.email);
+      idAv.textContent=fallback;
+      if(currentUser?.photoURL){
+        idAv.innerHTML=`<img src="${esc(currentUser.photoURL)}" alt="" referrerpolicy="no-referrer" onerror="this.parentElement.textContent='${esc(fallback)}';">`;
+      }
+    }
+    const idRole=$("idCardRole");
+    if(idRole) idRole.textContent=currentProfile?.role==="admin"?"Council Admin":"External Envoy";
+  }
+
+  // ---------- Auth ----------
+  window.handleLogin=async e=>{
+    e.preventDefault();
+    if(!firebaseConfigured){$("loginError").textContent="Firebase configuration is missing.";return;}
+    const email=$("loginEmail").value.trim().toLowerCase(), pass=$("loginPassword").value;
+    $("loginError").textContent=""; $("loginSubmitBtn").disabled=true; $("loginSubmitBtn").textContent="Authenticating…";
+    try{
+      const roster=await rosterByEmail(email);
+      if(!roster || roster.active===false) throw new Error("This email is not active on the TSA roster. Ask an admin to add or activate you.");
+      await signInWithEmailAndPassword(auth,email,pass);
+    }catch(e){$("loginError").textContent=friendlyAuthError(e);}
+    finally{$("loginSubmitBtn").disabled=false;$("loginSubmitBtn").textContent="Enter the Guild Hall";}
+  };
+
+  window.handleSignup=async e=>{
+    e.preventDefault();
+    $("signupError").textContent="";
+    const email=$("signupEmail").value.trim().toLowerCase(), p=$("signupPassword").value, c=$("signupConfirm").value;
+    if(p!==c){$("signupError").textContent="Passwords do not match.";return;}
+    try{
+      if(!firebaseConfigured) throw new Error("Firebase configuration is missing.");
+      const cred=await createUserWithEmailAndPassword(auth,email,p);
+      let roster=null;
+      try{ roster=await rosterByEmail(email); }catch(_){}
+      if(!roster || roster.active===false){
+        await signOut(auth);
+        $("signupError").textContent="Your account was created, but this email is not on the active TSA roster. Ask an admin to add it before signing in.";
+        return;
+      }
+      const role=roster.role==="admin"?"admin":"member";
+      await setDoc(doc(db,"users",cred.user.uid),{
+        email, displayName:roster.name||cred.user.displayName||email.split("@")[0],
+        role, active:true, course:roster.course||"", bio:"",
+        createdAt:serverTimestamp(), updatedAt:serverTimestamp()
+      });
+      closeModal("signup"); showToast("Account created. Welcome to the guild.");
+    }catch(e){$("signupError").textContent=friendlyAuthError(e);}
+  };
+
+window.signInWithGoogle=async()=>{
+  if(!firebaseConfigured){
+    showToast("Firebase configuration is missing.","error");
+    return;
+  }
+
+  try{
+    const result=await signInWithPopup(auth,googleProvider);
+    const email=result.user.email?.toLowerCase();
+
+    const roster=await rosterByEmail(email);
+
+    if(!roster || roster.active===false){
+      await signOut(auth);
+      $("loginError").textContent =
+        "This Google account is not on the active TSA roster. Ask an admin to add you first.";
+      return;
+    }
+
+    const existing=await getDoc(doc(db,"users",result.user.uid));
+
+    if(!existing.exists()){
+      await setDoc(doc(db,"users",result.user.uid),{
+        email,
+        displayName:roster.name||result.user.displayName||email.split("@")[0],
+        role:roster.role==="admin"?"admin":"member",
+        active:true,
+        course:roster.course||"",
+        bio:"",
+        createdAt:serverTimestamp(),
+        updatedAt:serverTimestamp()
+      });
+    }
+
+    closeModal("login");
+    showToast("Signed in securely with Google.");
+
+  }catch(e){
+    $("loginError").textContent=friendlyAuthError(e);
+  }
+};
+  window.sendPasswordReset=async()=>{
+    const email=$("loginEmail").value.trim().toLowerCase();
+    if(!email){$("loginError").textContent="Enter your email first, then tap Forgot password.";return;}
+    try{
+      const roster=await rosterByEmail(email);
+      if(!roster){$("loginError").textContent="That email is not on the TSA roster.";return;}
+      await sendPasswordResetEmail(auth,email);
+      $("loginError").textContent="Password reset email sent. Check your inbox.";
+    }catch(e){$("loginError").textContent=friendlyAuthError(e);}
+  };
+
+  window.logout=async()=>{if(auth)await signOut(auth);};
+  window.addEventListener("load",()=>document.querySelectorAll(".overlay").forEach(ov=>ov.addEventListener("click",e=>{if(e.target===ov)closeModal(ov.id.replace("Overlay",""));})));
+  document.addEventListener("keydown",e=>{if(e.key==="Escape")document.querySelectorAll(".overlay.open").forEach(ov=>closeModal(ov.id.replace("Overlay","")));});
+
+  // ---------- Real-time data ----------
+  function clearListeners(){unsubscribers.forEach(u=>u());unsubscribers=[];}
+  function listenCollection(name, target, qref){
+    const unsub=onSnapshot(qref,snap=>{realtime[target]=snap.docs.map(d=>({id:d.id,...d.data()})); refreshUI(target);},err=>console.error(name,err));
+    unsubscribers.push(unsub);
+  }
+  function refreshUI(target){
+    if(!currentProfile)return;
+    if(target==="myTasks" || target==="tasks") renderTasks();
+    if(target==="allTasks" && currentProfile.role==="admin") renderAssign();
+    if(target==="partners") renderPartners();
+    if(target==="applications" && currentProfile.role==="admin") renderApplications();
+    if(target==="documents"){renderDocuments();populateMoaSelectors();}
+    if(target==="notifications"){renderNotifications();updateNotifBadge();}
+    if(target==="members" && currentProfile.role==="admin"){renderMembers();renderAssign();}
+  }
+
+  function startRealtime(){
+    clearListeners();
+    const uid=currentUser.uid;
+    listenCollection("myTasks","myTasks",query(collection(db,"tasks"),where("assignedTo","==",uid)));
+    listenCollection("partners","partners",query(collection(db,"partners"),orderBy("name")));
+    listenCollection("documents","documents",query(collection(db,"documents"),orderBy("createdAt","desc")));
+    listenCollection("notifications","notifications",query(collection(db,"notifications"),where("userId","==",uid),orderBy("createdAt","desc")));
+    if(currentProfile.role==="admin"){
+      listenCollection("members","members",query(collection(db,"users"),orderBy("email")));
+      listenCollection("allTasks","allTasks",query(collection(db,"tasks"),orderBy("createdAt","desc")));
+      listenCollection("applications","applications",query(collection(db,"applications"),orderBy("submittedAt","desc")));
+    }
+  }
+
+  async function enterHomepage(){
+    document.body.classList.remove("role-admin","role-member");
+    document.body.classList.add(currentProfile.role==="admin"?"role-admin":"role-member");
+    $("welcomeName").textContent="Welcome back, "+(currentProfile.displayName||currentUser.email.split("@")[0]);
+    $("welcomeSub").textContent=currentProfile.role==="admin"?"The Council's live ledger is open. Manage tasks, members, applications, and MOAs.":"The guild hall is open. Your tasks, MOA references, and notifications are here.";
+    const idName=$("idCardName"); if(idName) idName.textContent=currentProfile.displayName||currentUser.email.split("@")[0];
+    $("landing").classList.add("hidden"); $("homepage").classList.add("active");
+    renderUserHeader(); showPanel("tasks"); window.scrollTo(0,0); startRealtime();
+    requestAnimationFrame(()=>{
+      const tb=document.querySelector("#homepage .topbar");
+      if(tb) document.documentElement.style.setProperty("--topbar-h", tb.offsetHeight+"px");
+    });
+    await Promise.all([renderProfile(),renderPartners(),renderDocuments(),renderTasks(),renderOverview()]);
+    if(currentProfile.role==="admin") await Promise.all([renderMembers(),renderAssign(),renderApplications()]);
+  }
+
+  if(auth){
+    onAuthStateChanged(auth,async user=>{
+      if(!user){currentUser=null;currentProfile=null;clearListeners();$("homepage").classList.remove("active");$("landing").classList.remove("hidden");return;}
+      try{
+        const profile=await getProfile(user.uid);
+        if(!profile || profile.active===false){await signOut(auth);showToast("Your account is not active.","error");return;}
+        currentUser=user;currentProfile=profile;closeModal("login");closeModal("signup");await enterHomepage();
+      }catch(e){console.error(e);showToast("Could not load your profile.","error");}
+    });
+  }
+
+  // ---------- Tasks ----------
+  async function renderTasks(){
+    if(!currentProfile)return;
+    const mine=(realtime.myTasks||realtime.tasks||[]).filter(t=>t.assignedTo===currentUser.uid);
+    const wrap=$("tasksList");
+    if(!mine.length)wrap.innerHTML='<p class="empty-note">No quests assigned to you yet. Check back soon.</p>';
+    else wrap.innerHTML=mine.map(taskCardHTML).join("");
+    const pending=mine.filter(t=>t.status==="pending").length, submitted=mine.filter(t=>t.status!=="pending").length;
+    animateNumber($("overviewPending"),pending);animateNumber($("overviewSubmitted"),submitted);animateNumber($("overviewPartners"),(realtime.partners||[]).length);
+    const badge=$("taskBadge");if(badge){badge.style.display=pending?"inline-block":"none";badge.textContent=pending;}
+  }
+  function animateNumber(el,to){if(!el)return;el.textContent=to;}
+  function taskCardHTML(t){
+    const status=t.status==="approved"?"Approved":t.status==="submitted"?"Submitted":"Pending";
+    const cls=t.status==="approved"?"st-approved":t.status==="submitted"?"st-submitted":"st-pending";
+    const priority=t.priority||"normal";
+    const moa=t.moaRefId?realtime.documents.find(d=>d.id===t.moaRefId):null;
+    return `<div class="task-card priority-${esc(priority)}">
+      <div class="task-top"><h3>${esc(t.title)}</h3><span class="status-badge ${cls}">${status}</span></div>
+      <div class="task-meta">${t.event?`<span class="meta-chip">🎪 ${esc(t.event)}</span>`:""}<span class="meta-chip">Priority: ${esc(priority)}</span>${t.dueDate?`<span class="meta-chip">Due: ${esc(t.dueDate)}</span>`:""}</div>
+      <p>${esc(t.description||"No description provided.")}</p>
+      ${moa?`<div class="inline-form"><strong>Reference MOA:</strong><p>${esc(moa.title)} · ${esc(moa.event)}</p><button type="button" class="btn btn-ghost btn-sm" onclick="viewMoaDoc('${esc(moa.id)}')">View / Download MOA</button></div>`:""}
+      ${t.status==="pending"?`<button class="btn btn-ghost btn-sm" onclick="toggleForm('submitForm-${esc(t.id)}')">Submit Task</button>
+      <div class="inline-form" id="submitForm-${esc(t.id)}" style="display:none;">
+        <div class="field"><label>What did you complete?</label><textarea id="submitText-${esc(t.id)}" placeholder="Describe what you did…"></textarea></div>
+        <div class="field"><label>Link (optional)</label><input id="submitLink-${esc(t.id)}" placeholder="Drive/Docs link"></div>
+        <button class="seal-submit" onclick="submitTask('${esc(t.id)}')">Seal & Submit</button>
+      </div>`:`<div class="inline-form"><strong>Your submission:</strong><p>${esc(t.submission?.text||"")}</p>${t.submission?.link?`<a href="${esc(t.submission.link)}" target="_blank" rel="noopener">${esc(t.submission.link)}</a>`:""}</div>`}
+    </div>`;
+  }
+  window.submitTask=async id=>{
+    const t=realtime.tasks.find(x=>x.id===id);if(!t||t.assignedTo!==currentUser.uid)return;
+    const text=$("submitText-"+id)?.value.trim();const link=$("submitLink-"+id)?.value.trim()||"";
+    if(!text){showToast("Describe what you completed first.");return;}
+    await updateDoc(doc(db,"tasks",id),{status:"submitted",submission:{text,link,submittedAt:serverTimestamp()}});
+    showToast("Task submitted to the Council.");
+    if(t.createdBy) await addDoc(collection(db,"notifications"),{userId:t.createdBy,type:"task_submitted",title:"Task submitted",body:`${currentProfile.displayName||currentUser.email} submitted "${t.title}".`,read:false,createdAt:serverTimestamp()});
+  };
+
+  // ---------- Overview ----------
+  window.renderOverview=async()=>{await renderTasks();};
+  // ---------- Partners ----------
+  window.renderPartners=()=>{
+    const wrap=$("partnersList"),q=($("partnerSearch")?.value||"").trim().toLowerCase();
+    const list=realtime.partners.filter(p=>!q||(p.name||"").toLowerCase().includes(q)||(p.contact||"").toLowerCase().includes(q)||(p.email||"").toLowerCase().includes(q));
+    $("partnerAdminTools").style.display=currentProfile?.role==="admin"?"block":"none";
+    wrap.innerHTML=list.length?list.map(partnerCardHTML).join(""):'<p class="empty-note">No partner organizations match your search.</p>';
+  };
+  function partnerCardHTML(p){return `<div class="partner-card"><h3>${esc(p.name)}</h3><p>${esc(p.contact||"")}${p.contact&&p.email?" · ":""}${esc(p.email||"")}</p>${p.phone?`<p>${esc(p.phone)}</p>`:""}${p.notes?`<p class="partner-notes">${esc(p.notes)}</p>`:""}<div class="partner-actions"><button class="btn btn-ghost btn-sm" onclick="copyPartner('${esc(p.id)}')">Copy Info</button>${currentProfile?.role==="admin"?`<button class="btn btn-ghost btn-sm" onclick="editPartner('${esc(p.id)}')">Edit</button><button class="btn btn-ghost btn-sm" onclick="deletePartner('${esc(p.id)}')">Delete</button>`:""}</div></div>`;}
+  window.copyPartner=async id=>{const p=realtime.partners.find(x=>x.id===id);if(!p)return;try{await navigator.clipboard.writeText([p.name,p.contact,p.email,p.phone,p.notes].filter(Boolean).join("\n"));showToast("Copied to clipboard.");}catch(e){showToast("Could not copy.","error");}};
+  window.editPartner=async id=>{const p=realtime.partners.find(x=>x.id===id);if(!p)return;$("partnerEditId").value=p.id;$("partnerName").value=p.name||"";$("partnerContact").value=p.contact||"";$("partnerEmail").value=p.email||"";$("partnerPhone").value=p.phone||"";$("partnerNotes").value=p.notes||"";$("partnerSaveBtn").textContent="Save Changes";$("partnerForm").style.display="block";};
+  window.savePartnerForm=async()=>{if(currentProfile?.role!=="admin")return;const name=$("partnerName").value.trim();if(!name){$("partnerFormMsg").textContent="Organization name is required.";return;}const id=$("partnerEditId").value;const data={name,contact:$("partnerContact").value.trim(),email:$("partnerEmail").value.trim(),phone:$("partnerPhone").value.trim(),notes:$("partnerNotes").value.trim(),updatedAt:serverTimestamp()};if(id)await updateDoc(doc(db,"partners",id),data);else await addDoc(collection(db,"partners"),{...data,createdAt:serverTimestamp()});["partnerEditId","partnerName","partnerContact","partnerEmail","partnerPhone","partnerNotes"].forEach(i=>$(i).value="");$("partnerForm").style.display="none";showToast("Partner saved.");};
+  window.deletePartner=async id=>{if(currentProfile?.role!=="admin")return;if(confirm("Remove this partner organization?")){await deleteDoc(doc(db,"partners",id));showToast("Partner removed.");}};
+
+  // ---------- Profile ----------
+  function renderProfileCard(){
+    const nameEl=$("profileCardName"),emailEl=$("profileCardEmail"),roleEl=$("profileCardRole"),avEl=$("profileAvatarBig");
+    if(!nameEl)return;
+    nameEl.textContent=currentProfile.displayName||currentUser.email.split("@")[0];
+    emailEl.textContent=currentUser.email;
+    roleEl.textContent=currentProfile.role==="admin"?"COUNCIL ADMIN":"ENVOY";
+    const fallback=initials(currentProfile.displayName,currentUser.email);
+    avEl.textContent=fallback;
+    if(currentUser.photoURL) avEl.innerHTML=`<img src="${esc(currentUser.photoURL)}" alt="" referrerpolicy="no-referrer" onerror="this.parentElement.textContent='${esc(fallback)}';">`;
+  }
+  function renderProfile(){if(!currentProfile)return;$("profileEmail").value=currentUser.email;$("profileName").value=currentProfile.displayName||"";$("profileCourse").value=currentProfile.course||"";$("profileBio").value=currentProfile.bio||"";renderProfileCard();}
+  window.saveProfile=async()=>{const name=$("profileName").value.trim(),course=$("profileCourse").value.trim(),bio=$("profileBio").value.trim();await updateDoc(doc(db,"users",currentUser.uid),{displayName:name,course,bio,updatedAt:serverTimestamp()});currentProfile={...currentProfile,displayName:name,course,bio};renderUserHeader();renderProfileCard();$("welcomeName").textContent="Welcome back, "+(name||currentUser.email.split("@")[0]);const idName=$("idCardName");if(idName)idName.textContent=name||currentUser.email.split("@")[0];$("profileMsg").textContent="Saved.";showToast("Profile updated.");};
+  window.changePassword=async()=>{showToast("Use 'Forgot password?' on the login screen to reset your Firebase password.");};
+
+  // ---------- Admin members ----------
+  window.renderMembers=()=>{if(currentProfile?.role!=="admin")return;const q=($("memberSearch")?.value||"").trim().toLowerCase();const list=realtime.members.filter(m=>!q||(m.displayName||"").toLowerCase().includes(q)||(m.email||"").toLowerCase().includes(q));$("membersList").innerHTML=list.length?list.map(memberRowHTML).join(""):'<p class="empty-note">No members match your search.</p>';};
+  function memberRowHTML(m){const self=m.id===currentUser.uid;return `<div class="member-row"><div class="member-info"><strong>${esc(m.displayName||m.email)}</strong><span class="member-email">${esc(m.email)}</span></div><span class="status-pill ${m.role==="admin"?"pill-gold":""}">${esc(m.role||"member").toUpperCase()}</span><span class="status-pill ${m.active===false?"pill-off":""}">${m.active===false?"REVOKED":"ACTIVE"}</span><div class="member-actions">${!self?`<button class="btn btn-ghost btn-sm" onclick="toggleMemberAccess('${esc(m.id)}',${m.active!==false})">${m.active===false?"Grant":"Revoke"} Access</button><button class="btn btn-ghost btn-sm" onclick="toggleMemberRole('${esc(m.id)}','${esc(m.role||"member")}')">${m.role==="admin"?"Demote":"Promote"} Role</button>`:""} </div></div>`;}
+  window.toggleMemberAccess=async(uid,active)=>{if(currentProfile?.role!=="admin")return;await updateDoc(doc(db,"users",uid),{active:!active,updatedAt:serverTimestamp()});showToast(active?"Access revoked.":"Access granted.");};
+  window.toggleMemberRole=async(uid,role)=>{if(currentProfile?.role!=="admin")return;await updateDoc(doc(db,"users",uid),{role:role==="admin"?"member":"admin",updatedAt:serverTimestamp()});showToast("Role updated.");};
+  window.addMember=async()=>{if(currentProfile?.role!=="admin")return;const email=$("newMemberEmail").value.trim().toLowerCase(),role=$("newMemberRole").value;if(!email||!email.includes("@")){$("addMemberMsg").textContent="Enter a valid email.";return;}const existing=await rosterByEmail(email);if(existing){$("addMemberMsg").textContent="That email is already on the roster.";return;}await setDoc(doc(db,"roster",emailKey(email)),{email,name:"",role,active:true,createdAt:serverTimestamp(),createdBy:currentUser.uid});$("newMemberEmail").value="";$("addMemberMsg").textContent="Roster entry created. The member can now create a password account or use Google.";showToast("Envoy added to the roster.");};
+
+  // ---------- Admin tasks ----------
+  window.renderAssign=()=>{
+    if(currentProfile?.role!=="admin")return;
+    const active=(realtime.members||[]).filter(m=>m.active!==false);
+    const assigneeSelect=$("taskAssignee");
+    if(assigneeSelect){
+      assigneeSelect.innerHTML=active.map(m=>`<option value="${esc(m.id)}">${esc(m.displayName||m.email)} — ${esc(m.email)}</option>`).join("");
+    }
+    populateMoaSelectors();
+    const tasks=realtime.allTasks||realtime.tasks||[];
+    const wrap=$("allTasksList");
+    if(wrap){
+      wrap.innerHTML=tasks.length?tasks.map(adminTaskHTML).join(""):'<p class="empty-note">No tasks assigned yet.</p>';
+    }
+    const awaiting=tasks.filter(t=>t.status==="submitted").length;
+    updateBadge("assignBadge",awaiting);
+  };
+
+  function adminTaskHTML(t){
+    const member=(realtime.members||[]).find(m=>m.id===t.assignedTo);
+    const assigneeName=member?.displayName||t.assignedToName||t.assignedToEmail||"Envoy";
+    const assigneeEmail=member?.email||t.assignedToEmail||"";
+
+    return `<div class="task-card priority-${esc(t.priority||"normal")}">
+      <div class="task-top"><h3>${esc(t.title)}</h3><span class="status-badge ${t.status==="approved"?"st-approved":t.status==="submitted"?"st-submitted":"st-pending"}">${esc(t.status||"pending")}</span></div>
+      <div class="task-meta">
+        ${t.event?`<span class="meta-chip">🎪 ${esc(t.event)}</span>`:""}
+        <span class="meta-chip">Assigned To: ${esc(assigneeName)}</span>
+        ${t.dueDate?`<span class="meta-chip">Due: ${esc(t.dueDate)}</span>`:""}
+      </div>
+      <p>${esc(t.description||"No description provided.")}</p>
+      ${t.moaRefId?(()=>{const d=(realtime.documents||[]).find(x=>x.id===t.moaRefId);return d?`<p><button type="button" onclick="viewMoaDoc('${esc(d.id)}')" class="btn btn-ghost btn-sm">📎 Attached MOA: ${esc(d.title)}</button></p>`:""})():""}
+      <div class="task-actions" style="margin-top:0.8rem;display:flex;gap:0.5rem;flex-wrap:wrap;">
+        ${assigneeEmail ? `<button type="button" class="btn btn-ghost btn-sm" onclick="emailTaskAssignee('${esc(t.id)}')" id="emailBtn-${esc(t.id)}">✉️ Email Member Directly</button>` : ""}
+        ${t.status==="submitted"?`<button class="btn btn-gold btn-sm" onclick="approveTask('${esc(t.id)}')">✓ Approve Submission</button>`:""}
+      </div>
+      ${t.status==="submitted"?`<div class="inline-form" style="margin-top:0.8rem;"><strong>Member Submission:</strong><p>${esc(t.submission?.text||"")}</p>${t.submission?.link?`<a href="${esc(t.submission.link)}" target="_blank" rel="noopener" style="color:var(--sapphire);text-decoration:underline;">${esc(t.submission.link)}</a>`:""}</div>`:""}
+    </div>`;
+  }
+
+  function populateMoaSelectors(){
+    const refs=(realtime.documents||[]).filter(d=>d.type==="reference");
+    const s=$("taskMoaRef");
+    if(s) s.innerHTML='<option value="">No reference MOA</option>'+refs.map(d=>`<option value="${esc(d.id)}">${esc(d.event)} — ${esc(d.title)}</option>`).join("");
+  }
+
+  window.createTask=async()=>{
+    if(currentProfile?.role!=="admin")return;
+    const title=$("taskTitle").value.trim(),assignedTo=$("taskAssignee").value,event=$("taskEvent").value.trim(),priority=$("taskPriority").value,description=$("taskDesc").value.trim(),dueDate=$("taskDue").value,moaRefId=$("taskMoaRef").value;
+    if(!title||!assignedTo){$("taskMsg").textContent="Title and assignee are required.";return;}
+    
+    const member=(realtime.members||[]).find(m=>m.id===assignedTo);
+    const memberEmail=member?.email||"";
+    const memberName=member?.displayName||memberEmail||"Envoy";
+
+    try{
+      const taskRef=await addDoc(collection(db,"tasks"),{
+        title,
+        assignedTo,
+        assignedToEmail: memberEmail,
+        assignedToName: memberName,
+        event,
+        priority,
+        description,
+        dueDate,
+        moaRefId:moaRefId||null,
+        status:"pending",
+        submission:null,
+        createdBy:currentUser.uid,
+        createdByName:currentProfile.displayName||currentUser.email,
+        createdAt:serverTimestamp()
+      });
+
+      if(assignedTo){
+        await addDoc(collection(db,"notifications"),{
+          userId:assignedTo,
+          type:"task_assigned",
+          title:"New Task Assigned",
+          body:`${currentProfile.displayName||currentUser.email} assigned you "${title}"${event?` for ${event}`:""}.`,
+          taskId:taskRef.id,
+          read:false,
+          createdAt:serverTimestamp()
+        });
+      }
+
+      if(memberEmail){
+        await addDoc(collection(db,"mail"),{
+          to:memberEmail,
+          message:{
+            subject:`[TSA External Affairs] Task Assigned: ${title}`,
+            html:`<p>Hello ${esc(memberName)},</p><p>You have been assigned a task for the <strong>External Affairs Committee</strong>:</p><h3>${esc(title)}</h3>${event?`<p><strong>Event:</strong> ${esc(event)}</p>`:""}${dueDate?`<p><strong>Due Date:</strong> ${esc(dueDate)}</p>`:""}<p>${esc(description||"Please log in to the portal for full details.")}</p><hr><p><a href="https://tsa-external-envoys.web.app">Open TSA External Envoys Portal</a></p>`
+          }
+        });
+      }
+
+      ["taskTitle","taskEvent","taskDesc","taskDue"].forEach(i=>$(i).value="");
+      $("taskPriority").value="normal";
+      $("taskMoaRef").value="";
+
+      $("taskMsg").innerHTML = `Task assigned! Reflected in member dashboard.`;
+      if(memberEmail){
+        $("taskMsg").innerHTML += ` <span id="taskEmailStatus" style="margin-left:0.5rem;">Sending email…</span>`;
+        sendTaskEmail(memberEmail, memberName, title, description, dueDate).then(()=>{
+          const s=$("taskEmailStatus");if(s)s.textContent="✅ Email sent to "+memberName+".";
+        }).catch(err=>{
+          const s=$("taskEmailStatus");if(s)s.textContent="⚠️ Could not email "+memberName+" ("+(err?.text||err?.message||"error")+").";
+        });
+      }
+      showToast("Task assigned! Reflected in member dashboard.");
+    }catch(err){
+      console.error("createTask error:", err);
+      $("taskMsg").textContent = "Error: " + err.message;
+      showToast("Could not assign task.", "error");
+    }
+  };
+  window.emailTaskAssignee=async(id)=>{
+    const t=(realtime.allTasks||realtime.tasks||[]).find(x=>x.id===id);
+    if(!t)return;
+    const member=(realtime.members||[]).find(m=>m.id===t.assignedTo);
+    const assigneeName=member?.displayName||t.assignedToName||t.assignedToEmail||"Envoy";
+    const assigneeEmail=member?.email||t.assignedToEmail||"";
+    if(!assigneeEmail)return;
+    const btn=document.getElementById(`emailBtn-${id}`);
+    if(btn){btn.disabled=true;btn.textContent="Sending…";}
+    try{
+      await sendTaskEmail(assigneeEmail, assigneeName, t.title, t.description, t.dueDate);
+      showToast("Email sent to "+assigneeName+".");
+      if(btn){btn.textContent="✅ Sent";}
+    }catch(err){
+      showToast("Could not send email: "+(err?.text||err?.message||"unknown error"),"error");
+      if(btn){btn.disabled=false;btn.textContent="✉️ Email Member Directly";}
+    }
+  };
+  window.approveTask=async id=>{if(currentProfile?.role!=="admin")return;const t=realtime.tasks.find(x=>x.id===id);if(!t)return;await updateDoc(doc(db,"tasks",id),{status:"approved",approvedBy:currentUser.uid,approvedAt:serverTimestamp()});await addDoc(collection(db,"notifications"),{userId:t.assignedTo,type:"task_approved",title:"Task approved",body:`Your task "${t.title}" was approved by the Council.`,read:false,createdAt:serverTimestamp()});showToast("Task approved.");};
+
+  // ---------- Applications ----------
+  window.renderApplications=()=>{if(currentProfile?.role!=="admin")return;const q=($("applicationSearch")?.value||"").trim().toLowerCase();const list=realtime.applications.filter(a=>!q||(a.name||"").toLowerCase().includes(q)||(a.email||"").toLowerCase().includes(q));$("applicationsList").innerHTML=list.length?list.map(a=>applicationCardHTML(a)).join(""):'<p class="empty-note">No applications yet.</p>';const pending=list.filter(a=>a.status==="pending").length;updateBadge("applicationBadge",pending);};
+  function applicationCardHTML(a){return `<div class="application-card"><div class="task-top"><h3>${esc(a.name||a.email)}</h3><span class="status-badge ${a.status==="accepted"?"st-approved":"st-pending"}">${esc(a.status)}</span></div><p><strong>Email:</strong> ${esc(a.email)}</p><p><strong>Year & course:</strong> ${esc(a.course||"—")}</p><p><strong>Why:</strong> ${esc(a.why||"—")}</p>${a.status==="pending"?`<div class="application-actions"><button class="btn btn-gold btn-sm" onclick="acceptApplication('${esc(a.id)}')">Accept & Add to Roster</button><button class="btn btn-ghost btn-sm" onclick="declineApplication('${esc(a.id)}')">Decline</button></div>`:""}</div>`;}
+  window.acceptApplication=async id=>{if(currentProfile?.role!=="admin")return;const a=realtime.applications.find(x=>x.id===id);if(!a)return;await setDoc(doc(db,"roster",emailKey(a.email)),{email:a.email,name:a.name||"",role:"member",active:true,course:a.course||"",createdAt:serverTimestamp(),createdBy:currentUser.uid},{merge:true});await updateDoc(doc(db,"applications",id),{status:"accepted",reviewedBy:currentUser.uid,reviewedAt:serverTimestamp()});showToast("Applicant accepted and added to the roster.");};
+  window.declineApplication=async id=>{if(currentProfile?.role!=="admin")return;if(confirm("Decline this membership application?")){await updateDoc(doc(db,"applications",id),{status:"declined",reviewedBy:currentUser.uid,reviewedAt:serverTimestamp()});showToast("Application declined.");}};
+
+  // ---------- MOA documents ----------
+  window.setDocFilter=filter=>{docFilter=filter;document.querySelectorAll("#panel-documents .filter-chip").forEach(x=>x.classList.remove("active"));const id=filter==="all"?"docFilterAll":filter==="reference"?"docFilterReference":"docFilterFinal";$(id)?.classList.add("active");renderDocuments();};
+  window.updateMoaFileLabel=()=>{const f=$("moaFile").files[0];$("moaFileLabel").textContent=f?`${f.name} · ${(f.size/1024/1024).toFixed(2)} MB`:"No file selected.";};
+  function renderDocuments(){if(!currentProfile)return;const q=($("docSearch")?.value||"").trim().toLowerCase();let list=realtime.documents.filter(d=>(docFilter==="all"||d.type===docFilter)&&(!q||(d.event||"").toLowerCase().includes(q)||(d.title||"").toLowerCase().includes(q)));$("documentsList").innerHTML=list.length?list.map(documentCardHTML).join(""):'<p class="empty-note">No MOAs match your search.</p>';updateBadge("docBadge",realtime.documents.length);populateMoaSelectors();}
+  function documentCardHTML(d){const final=d.type==="final";return `<div class="document-card"><div class="document-icon">${final?"📕":"📄"}</div><div><h3>${esc(d.title||d.fileName)}</h3><p><strong>Event:</strong> ${esc(d.event||"Uncategorized")}</p><p>${final?"Final / Approved MOA":"Reference MOA"} · ${esc(d.fileName||"")}</p>${d.notes?`<p>${esc(d.notes)}</p>`:""}</div><div class="doc-actions"><button type="button" class="btn btn-ghost btn-sm" onclick="viewMoaDoc('${esc(d.id)}')">View</button><button type="button" class="btn btn-gold btn-sm" onclick="downloadMoaDoc('${esc(d.id)}')">Download</button>${currentProfile?.role==="admin"?`<button class="btn btn-ghost btn-sm" onclick="deleteMoa('${esc(d.id)}')">Delete</button>`:""}</div></div>`;}
+  window.uploadMoa=async()=>{
+    if(currentProfile?.role!=="admin")return;
+    const file=$("moaFile").files[0],event=$("moaEvent").value.trim(),title=$("moaTitle").value.trim(),type=$("moaType").value,notes=$("moaNotes").value.trim();
+    if(!file||!event||!title){$("moaMsg").textContent="File, event, and title are required.";return;}
+    // Files are embedded as base64 directly in the Firestore document (no paid
+    // Cloud Storage needed). Firestore caps documents at 1MiB total, and base64
+    // inflates size by ~33%, so raw files are capped well under that ceiling.
+    if(file.size>700*1024){$("moaMsg").textContent="Please keep MOA files under 700KB (no paid storage plan is used, so files are stored inline).";return;}
+    $("moaMsg").textContent="Uploading…";$("moaProgress").style.width="40%";
+    try{
+      const dataUrl=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=()=>rej(r.error||new Error("Could not read file."));r.readAsDataURL(file);});
+      $("moaProgress").style.width="80%";
+      await addDoc(collection(db,"documents"),{title,event,type,notes,fileName:file.name,downloadUrl:dataUrl,size:file.size,contentType:file.type||"",uploadedBy:currentUser.uid,createdAt:serverTimestamp()});
+      $("moaFile").value="";$("moaFileLabel").textContent="No file selected.";$("moaEvent").value="";$("moaTitle").value="";$("moaNotes").value="";$("moaProgress").style.width="0";$("moaMsg").textContent="Uploaded.";showToast("MOA added to the library.");
+    }catch(err){
+      $("moaMsg").textContent=err.message||"Upload failed.";$("moaProgress").style.width="0";showToast("Upload failed.","error");
+    }
+  };
+  window.deleteMoa=async(id)=>{
+    if(currentProfile?.role!=="admin"||!confirm("Delete this MOA from the library?"))return;
+    await deleteDoc(doc(db,"documents",id));showToast("MOA removed.");
+  };
+
+  // ---------- Notifications ----------
+  function updateBadge(id,n){const b=$(id);if(!b)return;b.textContent=n;b.style.display=n?"inline-block":"none";}
+  function updateNotifBadge(){const n=realtime.notifications.filter(x=>!x.read).length;updateBadge("notifCount",n);document.querySelector(".notif-btn")?.classList.toggle("has-unread",n>0);}
+  function renderNotifications(){
+    const panel=$("notificationPanel");if(!panel)return;
+    // Only show UNREAD notifications — once marked read they disappear from the panel entirely
+    const unread=realtime.notifications.filter(n=>!n.read).slice(0,30);
+    panel.innerHTML=`<div class="notification-head"><strong style="color:var(--pro-gold, var(--gold-light));font-family:'Cinzel',serif;">Notifications</strong>${unread.length?`<button class="btn btn-ghost btn-sm" onclick="markAllNotifications()">Mark all read</button>`:""}</div>${unread.length?unread.map(n=>`<div class="notification-item unread" onclick="markNotification('${esc(n.id)}')"><strong>${esc(n.title)}</strong><span>${esc(n.body)}</span><time>${n.createdAt?.toDate?n.createdAt.toDate().toLocaleString():"Just now"}</time><span style="font-size:0.7rem;color:var(--gold);opacity:0.7;margin-top:0.3rem;display:block;">Click to dismiss</span></div>`).join(""):'<p class="empty-note" style="padding:1.2rem 1.1rem;">All caught up — no new notifications.</p>'}`;
+    updateNotifBadge();
+  }
+  window.markNotification=async id=>{await updateDoc(doc(db,"notifications",id),{read:true});renderNotifications();updateNotifBadge();};
+  window.markAllNotifications=async()=>{const unread=realtime.notifications.filter(n=>!n.read);await Promise.all(unread.map(n=>updateDoc(doc(db,"notifications",n.id),{read:true})));renderNotifications();updateNotifBadge();showToast("Notifications marked as read.");};
+
+  // ---------- Applications from landing ----------
+  window.handleApply=async e=>{
+    e.preventDefault();if(!firebaseConfigured){showToast("Firebase is not configured.","error");return;}
+    const application={name:$("applyName").value.trim(),course:$("applyYear").value.trim(),email:$("applyEmail").value.trim().toLowerCase(),why:$("applyWhy").value.trim(),status:"pending",submittedAt:serverTimestamp()};
+    const dup=await getDocs(query(collection(db,"applications"),where("email","==",application.email),where("status","==","pending")));
+    if(!dup.empty){showToast("An application from this email is already pending.","error");return;}
+    await addDoc(collection(db,"applications"),application);
+    $("applyFormWrap").style.display="none";$("applyConfirm").style.display="block";showToast("Application submitted.");
+  };
+
+  // ---------- small helpers ----------
+  window.renderAssign=window.renderAssign;
+  window.renderApplications=window.renderApplications;
+  window.renderMembers=window.renderMembers;
+  window.renderPartners=window.renderPartners;
+  window.renderDocuments=renderDocuments;
+  window.populateMoaSelectors=populateMoaSelectors;
+
+  // Topbar gains weight on scroll (both landing + homepage topbars).
+  window.addEventListener("scroll",()=>{
+    document.querySelectorAll(".topbar").forEach(t=>t.classList.toggle("scrolled",window.scrollY>8));
+  },{passive:true});
+
+  // Thin progress bar across the very top that fills as you scroll —
+  // works on both the landing page and the dashboard.
+  (function(){
+    const bar=document.getElementById("scrollProgress");
+    if(!bar) return;
+    let raf=0;
+    function update(){
+      raf=0;
+      const doc=document.documentElement;
+      const max=(doc.scrollHeight-doc.clientHeight)||1;
+      const pct=Math.min(100, Math.max(0, ((doc.scrollTop||window.scrollY||0)/max)*100));
+      bar.style.width=pct+"%";
+    }
+    window.addEventListener("scroll",()=>{ if(!raf) raf=requestAnimationFrame(update); },{passive:true});
+    window.addEventListener("resize",update);
+    update();
+  })();
+
+  // ---- Scroll-linked parallax: the hero + dashboard backdrop physically
+  // react to how far you've scrolled, not just a one-time fade-in. ----
+  (function(){
+    let reduceMotion=false;
+    try{ reduceMotion=!!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches); }catch(e){}
+    if(reduceMotion) return;
+
+    const heroArt=document.querySelector(".hero-bg-art");
+    const heroContent=document.querySelector(".hero-content");
+    const heroWrap=document.querySelector(".hero-clean-wrap");
+    const torchL=document.querySelector(".torch.left");
+    const torchR=document.querySelector(".torch.right");
+    const seal=document.getElementById("diplomaticSeal");
+    const scrollCue=document.querySelector(".scroll-cue");
+
+    let raf=0;
+    function tick(){
+      raf=0;
+      const y=window.scrollY||document.documentElement.scrollTop||0;
+
+      // Hero: background art drifts slower than the page (classic parallax),
+      // the card gently rises + fades as it scrolls out, torches sway apart.
+      if(heroWrap){
+        const heroH=heroWrap.offsetHeight||800;
+        const p=Math.min(1, y/(heroH*0.9));
+        if(heroArt) heroArt.style.transform=`translateY(${y*0.18}px) scale(${1.02+p*0.05})`;
+        if(heroContent){
+          heroContent.style.transform=`translateY(${-y*0.22}px)`;
+          heroContent.style.opacity=String(Math.max(0, 1-p*1.15));
+        }
+        if(scrollCue) scrollCue.style.opacity=String(Math.max(0, 1-y/140));
+        if(torchL) torchL.style.transform=`translate(${-p*14}px, ${y*0.1}px)`;
+        if(torchR) torchR.style.transform=`translate(${p*14}px, ${y*0.1}px)`;
+      }
+
+      // Diplomatic seal keeps spinning via CSS, but nudge its scale with
+      // scroll so it feels like it's reacting to the page, not just sitting.
+      if(seal){
+        const r=seal.getBoundingClientRect();
+        const centered=1-Math.min(1, Math.abs((r.top+r.height/2)-innerHeight/2)/innerHeight);
+        seal.style.transform=`scale(${0.94+centered*0.09})`;
+      }
+    }
+    window.addEventListener("scroll",()=>{ if(!raf) raf=requestAnimationFrame(tick); },{passive:true});
+    tick();
+  })();
+
+  // Dashboard backdrop glow drifts with scroll position too, on top of the
+  // mouse-follow spotlight, so the "empty" space behind panels keeps
+  // responding as you move through the page, not just when the mouse moves.
+  (function(){
+    const home=document.getElementById("homepage");
+    if(!home) return;
+    let reduceMotion=false;
+    try{ reduceMotion=!!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches); }catch(e){}
+    if(reduceMotion) return;
+    const heroText=document.querySelector(".cmd-hero-text");
+    const scroller=window;
+    let raf=0;
+    function apply(){
+      raf=0;
+      const sy=document.documentElement.scrollTop||document.body.scrollTop||window.scrollY||0;
+      const pct=Math.max(0, Math.min(100, 8+(sy*0.04)));
+      document.documentElement.style.setProperty("--homepage-scroll-y", pct+"%");
+      document.documentElement.style.setProperty("--homepage-scroll-y-px", (sy*0.35)+"px");
+      if(heroText){
+        const fade=Math.max(0.4, 1-sy*0.006);
+        heroText.style.opacity=String(fade);
+        heroText.style.transform=`translateY(${-Math.min(sy*0.15,18)}px)`;
+      }
+    }
+    scroller.addEventListener("scroll",()=>{ if(!raf) raf=requestAnimationFrame(apply); },{passive:true});
+    apply();
+  })();
+
+  // Soft cursor-following glow behind the dashboard content, so it keeps
+  // reacting even when you're not scrolling.
+  (function(){
+    const home=document.getElementById("homepage");
+    if(!home) return;
+    let reduceMotion=false;
+    try{ reduceMotion=!!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches); }catch(e){}
+    if(reduceMotion) return;
+    let raf2=0, px=88, py=8;
+    home.addEventListener("mousemove", e=>{
+      const tx=(e.clientX/innerWidth)*100, ty=(e.clientY/innerHeight)*100;
+      if(!raf2) raf2=requestAnimationFrame(()=>{
+        px+=(tx-px)*0.12; py+=(ty-py)*0.12;
+        document.documentElement.style.setProperty("--mx", px+"%");
+        document.documentElement.style.setProperty("--my", py+"%");
+        raf2=0;
+      });
+    },{passive:true});
+  })();
+
+  // Keep the sidebar's sticky offset/height in sync with the topbar's real
+  // rendered height (rather than a guessed px value) so it sits flush
+  // against the left edge without gaps or overlap at any viewport width.
+  (function(){
+    function syncTopbarHeight(){
+      const tb=document.querySelector("#homepage .topbar");
+      if(tb) document.documentElement.style.setProperty("--topbar-h", tb.offsetHeight+"px");
+    }
+    syncTopbarHeight();
+    window.addEventListener("resize", syncTopbarHeight);
+    if("ResizeObserver" in window){
+      const tb=document.querySelector("#homepage .topbar");
+      if(tb) new ResizeObserver(syncTopbarHeight).observe(tb);
+    }
+  })();
+
+  // ID-card "lanyard": a lightweight spring-based swing (idle sway +
+  // drag-and-release) standing in for the full three.js/rapier physics
+  // Lanyard component, which needs a React/Vite build pipeline and GLB/PNG
+  // assets this plain HTML+Firebase app doesn't have.
+  (function(){
+    const card=document.getElementById("idCard");
+    if(!card) return;
+    let angle=-4, vel=0, dragging=false, dragStartX=0, dragStartAngle=0, pointerId=null, t=0;
+    let reduceMotion=false;
+    try{ reduceMotion=!!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches); }catch(e){}
+
+    function pointX(e){ return e.touches?e.touches[0].clientX:e.clientX; }
+    function onDown(e){
+      dragging=true; vel=0; card.classList.add("dragging");
+      dragStartX=pointX(e); dragStartAngle=angle;
+      if(e.pointerId!==undefined){ pointerId=e.pointerId; try{card.setPointerCapture(pointerId);}catch(_){} }
+    }
+    function onMove(e){
+      if(!dragging) return;
+      const dx=pointX(e)-dragStartX;
+      const target=Math.max(-45,Math.min(45, dragStartAngle + dx*0.35));
+      angle += (target-angle)*0.6;
+    }
+    function onUp(){ dragging=false; card.classList.remove("dragging"); }
+
+    card.addEventListener("pointerdown", onDown);
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    card.addEventListener("touchstart", onDown, {passive:true});
+    window.addEventListener("touchmove", onMove, {passive:true});
+    window.addEventListener("touchend", onUp);
+
+    function tick(){
+      t += 1/60;
+      if(!dragging){
+        const idleTarget = reduceMotion ? 0 : Math.sin(t*0.7)*4.5;
+        const springK=0.045, damping=0.86;
+        vel += (idleTarget-angle)*springK;
+        vel *= damping;
+        angle += vel;
+      }
+      card.style.transform="rotate("+angle.toFixed(2)+"deg)";
+      requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  })();
+
+  // Scroll-reveal: fade each section in once, the first time it enters
+  // view, and never hide it again. (Previously this recomputed opacity
+  // from scroll position every frame, which could get stuck at 0 depending
+  // on scroll speed/timing — this version is simpler and can't get stuck.)
+  const revealTargets=[...document.querySelectorAll("[data-reveal]")];
+  if("IntersectionObserver" in window && revealTargets.length){
+    const io=new IntersectionObserver(entries=>{
+      entries.forEach(entry=>{
+        if(entry.isIntersecting){ entry.target.classList.add("reveal-visible"); io.unobserve(entry.target); }
+      });
+    },{threshold:0.12, rootMargin:"0px 0px -6% 0px"});
+    revealTargets.forEach(el=>io.observe(el));
+    // Safety net: if anything is somehow never flagged as intersecting
+    // (e.g. it's already fully on-screen at load in an odd viewport),
+    // reveal it anyway after a moment so text is never left invisible.
+    setTimeout(()=>revealTargets.forEach(el=>el.classList.add("reveal-visible")),1200);
+  } else {
+    revealTargets.forEach(el=>el.classList.add("reveal-visible"));
+  }
+
+  // ============================================================
+  // LIVE INTERACTIVE "ROLE OF TSA" CODEX & ANIMATIONS
+  // ============================================================
+  const rolePillars = {
+    outreach: {
+      title: "Diplomatic Outreach & Letters",
+      badge: "Pillar 1 · Institutional Liaison",
+      desc: "Drafting, formatting, and hand-delivering official liaison letters, invitations, and sponsorship requests to partner colleges, executive offices, and industry directors on behalf of TechSystems Association.",
+      deliverables: [
+        "Official university invitations & endorsement requests",
+        "Executive outreach letters hand-delivered across Albay & Bicol",
+        "Prompt communication tracking & diplomatic follow-ups"
+      ],
+      target: "Higher Education Institutions, Corporate Partners, LGUs",
+      simFocus: "Official Inter-Campus Liaison Letter"
+    },
+    delegations: {
+      title: "Campus Delegations & Representation",
+      badge: "Pillar 2 · On-Site Presence",
+      desc: "Serving as official student ambassadors representing TSA in external communications and collaborations.",
+      deliverables: [
+        "In-person visits to partner organizations",
+        "Official delegation certificates and credentials for TSA envoys",
+        "Briefing other organizations on TSA's mission, programs, and student opportunities",
+      ],
+      target: "Sister BU Campuses, Regional IT Councils, Tech Summits",
+      simFocus: "Regional Tech Congress Delegation"
+    },
+    moa: {
+      title: "MOA Governance & Legal Partnerships",
+      badge: "Pillar 3 · Institutional Contracts",
+      desc: "Structuring and executing formal Memoranda of Agreement (MOA). Envoys ensure all partnership terms protect student welfare, provide real value, and are securely archived in the TSA digital library.",
+      deliverables: [
+        "MOA template drafting according to university legal standards",
+        "Reviewing bilateral commitments & student welfare safeguards",
+        "Digital library archival and reference document tracking"
+      ],
+      target: "Industry Internship Hosts, Tech Sponsors, Innovation Labs",
+      simFocus: "Bilateral MOA Ratification"
+    },
+    alliances: {
+      title: "Guild Alliances & Collaborative Summits",
+      badge: "Pillar 4 · Inter-Org Synergy",
+      desc: "Co-organizing multi-university hackathons, joint tech workshops, and student developer exchanges that unite student councils and technology organizations under one collaborative ecosystem.",
+      deliverables: [
+        "Co-hosting inter-school seminars and developer masterclasses",
+        "Cross-promotional outreach for regional student hackathons",
+        "Sharing technological resources and organizational playbooks"
+      ],
+      target: "Allied Student Guilds, Provincial Developer Communities",
+      simFocus: "Cross-Guild Regional Hackathon MOA"
+    }
+  };
+
+  let activePillarKey = "outreach";
+
+  window.selectRolePillar = function(key) {
+    if(!rolePillars[key]) return;
+    activePillarKey = key;
+    document.querySelectorAll(".role-tab").forEach(btn => {
+      btn.classList.toggle("active", btn.dataset.pillar === key);
+    });
+
+    const data = rolePillars[key];
+    const stage = document.getElementById("roleShowcaseStage");
+    if(!stage) return;
+
+    stage.style.opacity = "0";
+    stage.style.transform = "translateY(8px)";
+
+    setTimeout(() => {
+      stage.innerHTML = `
+        <div class="stage-left">
+          <span class="stage-badge">${esc(data.badge)}</span>
+          <h3>${esc(data.title)}</h3>
+          <p>${esc(data.desc)}</p>
+          <div class="stage-target-row">
+            <span class="stage-target-label">Target Entities:</span>
+            ${data.target.split(",").map(t => `<span class="target-tag">${esc(t.trim())}</span>`).join("")}
+          </div>
+        </div>
+        <div class="stage-right">
+          <h4><span style="color:var(--gold);">✦</span> Core Envoy Deliverables</h4>
+          <ul class="deliverables-list">
+            ${data.deliverables.map(d => `<li><span class="check-icon">✓</span><span>${esc(d)}</span></li>`).join("")}
+          </ul>
+          <button class="btn btn-gold stage-cta-btn" onclick="testWorkflowFromPillar('${esc(key)}')">
+            <span>⚡ Test This Mission Workflow</span>
+          </button>
+        </div>
+      `;
+      stage.style.opacity = "1";
+      stage.style.transform = "translateY(0)";
+    }, 180);
+
+    const focusEl = document.getElementById("simMissionFocus");
+    if(focusEl) focusEl.textContent = data.simFocus;
+  };
+
+  window.testWorkflowFromPillar = function(key) {
+    const data = rolePillars[key];
+    if(data){
+      const focusEl = document.getElementById("simMissionFocus");
+      if(focusEl) focusEl.textContent = data.simFocus;
+    }
+    const simCard = document.querySelector(".simulator-card");
+    if(simCard){
+      simCard.scrollIntoView({behavior:"smooth", block:"center"});
+      setTimeout(() => window.runMissionSimulation(), 500);
+    }
+  };
+
+  // Live Mission Simulator
+  let simRunning = false;
+  window.runMissionSimulation = function() {
+    if(simRunning) return;
+    simRunning = true;
+
+    const btn = document.getElementById("simLaunchBtn");
+    const bar = document.getElementById("simProgressBar");
+    const phaseLabel = document.getElementById("simPhaseLabel");
+    const feedback = document.getElementById("simFeedback");
+    const steps = [
+      document.getElementById("simStep1"),
+      document.getElementById("simStep2"),
+      document.getElementById("simStep3"),
+      document.getElementById("simStep4")
+    ];
+
+    if(btn) { btn.disabled = true; btn.textContent = "Running Mission Simulation…"; }
+    steps.forEach(s => s && s.classList.remove("active", "completed"));
+    if(bar) bar.style.width = "0%";
+
+    const timeline = [
+      { progress: "25%", step: 0, phase: "Phase 1: Formulating Liaison Letter & MOA Draft", feed: "Drafting formal invitation with verified legal terms..." },
+      { progress: "50%", step: 1, phase: "Phase 2: Council Admin & Dean Endorsement", feed: "Adviser signature and council endorsement sealed..." },
+      { progress: "75%", step: 2, phase: "Phase 3: Hand-Delivering to Partner Executive Office", feed: "Diplomatic envoy delegation arrived at partner campus..." },
+      { progress: "100%", step: 3, phase: "Phase 4: Bilateral Ratification Completed!", feed: "Alliance sealed! MOA added to the External Affairs Library." }
+    ];
+
+    timeline.forEach((item, index) => {
+      setTimeout(() => {
+        if(bar) bar.style.width = item.progress;
+        if(phaseLabel) phaseLabel.textContent = item.phase;
+        if(feedback) feedback.textContent = item.feed;
+
+        steps.forEach((s, idx) => {
+          if(!s) return;
+          if(idx < item.step) { s.classList.remove("active"); s.classList.add("completed"); }
+          else if(idx === item.step) { s.classList.add("active"); s.classList.remove("completed"); }
+          else { s.classList.remove("active", "completed"); }
+        });
+
+        if(index === timeline.length - 1) {
+          steps[item.step]?.classList.add("completed");
+          if(btn) {
+            btn.classList.add("stamped");
+            setTimeout(() => btn.classList.remove("stamped"), 600);
+            btn.disabled = false;
+            btn.innerHTML = "<span>✓ Mission Complete! Replay Simulation</span>";
+          }
+          simRunning = false;
+          showToast("Alliance ratified! Mission simulated successfully.");
+        }
+      }, (index + 1) * 850);
+    });
+  };
+
+  // Envoy Aptitude Matcher
+  const aptitudeMatches = {
+    speaking: {
+      role: "Campus Delegation & Public Liaison Lead",
+      desc: "You excel at face-to-face representation, addressing student assemblies, and presenting TSA initiatives to executive boards.",
+      impact: "High visibility, direct networking with university leadership"
+    },
+    drafting: {
+      role: "MOA Governance & Legal Correspondence Specialist",
+      desc: "You have sharp precision in technical writing, crafting ironclad bilateral terms, and maintaining official student association archives.",
+      impact: "Creates lasting institutional agreements and student benefits"
+    },
+    networking: {
+      role: "Corporate Linkage & Tech Industry Ambassador",
+      desc: "You love connecting talent with opportunity — building relationships with software companies, startup founders, and sponsors.",
+      impact: "Direct access to internships, sponsorships, and tech workshops"
+    },
+    events: {
+      role: "Guild Alliance & Regional Summit Coordinator",
+      desc: "You thrive on large-scale collaborations, coordinating multi-school summits, hackathon itineraries, and delegate logistics.",
+      impact: "Unites student developers across provincial and national scenes"
+    }
+  };
+
+  window.matchEnvoySkill = function(skillKey) {
+    document.querySelectorAll(".apt-chip").forEach(c => {
+      c.classList.toggle("active", c.dataset.skill === skillKey);
+    });
+
+    const data = aptitudeMatches[skillKey] || aptitudeMatches.speaking;
+    const resEl = document.getElementById("aptitudeResult");
+    if(!resEl) return;
+
+    resEl.innerHTML = `
+      <div class="apt-res-info">
+        <span class="eyebrow" style="color:var(--gold);">Matched Calling:</span>
+        <h4>${esc(data.role)}</h4>
+        <p>${esc(data.desc)}</p>
+        <span style="display:block;margin-top:0.35rem;font-size:0.8rem;color:var(--text-muted);font-style:italic;">Strategic Impact: ${esc(data.impact)}</span>
+      </div>
+      <button class="btn btn-gold btn-sm" onclick="openModal('apply')">
+        Apply for this Role →
+      </button>
+    `;
+  };
+
+  // Scroll-triggered Animated Number Counters
+  function animateMetrics() {
+    const vals = document.querySelectorAll(".metric-val");
+    vals.forEach(val => {
+      const target = parseInt(val.dataset.target, 10) || 0;
+      let start = 0;
+      const duration = 1800;
+      const startTime = performance.now();
+
+      function update(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        // easeOutExpo
+        const ease = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+        const current = Math.floor(ease * target);
+        val.textContent = current.toLocaleString();
+
+        if(progress < 1) {
+          requestAnimationFrame(update);
+        } else {
+          val.textContent = target.toLocaleString();
+        }
+      }
+      requestAnimationFrame(update);
+    });
+  }
+
+  // Observe metrics strip to trigger count-up
+  const metricsStrip = document.querySelector(".metrics-strip");
+  if(metricsStrip && "IntersectionObserver" in window) {
+    let triggered = false;
+    const observer = new IntersectionObserver((entries) => {
+      if(entries[0].isIntersecting && !triggered) {
+        triggered = true;
+        animateMetrics();
+        observer.unobserve(metricsStrip);
+      }
+    }, { threshold: 0.25 });
+    observer.observe(metricsStrip);
+  }
+
+  // 3D Card Perspective Tilt Effect on mouse movement
+  (function init3DTilt() {
+    const tiltCards = document.querySelectorAll(".role-showcase-stage, .simulator-card, .aptitude-box");
+    tiltCards.forEach(card => {
+      card.addEventListener("mousemove", e => {
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const cx = rect.width / 2;
+        const cy = rect.height / 2;
+        const rotX = ((y - cy) / cy) * -3.5;
+        const rotY = ((x - cx) / cx) * 3.5;
+        card.style.transform = `perspective(1000px) rotateX(${rotX.toFixed(2)}deg) rotateY(${rotY.toFixed(2)}deg)`;
+      });
+      card.addEventListener("mouseleave", () => {
+        card.style.transform = "perspective(1000px) rotateX(0deg) rotateY(0deg)";
+      });
+    });
+  })();
+
+  // Initialize defaults on DOM load
+  window.addEventListener("DOMContentLoaded", () => {
+    window.selectRolePillar("outreach");
+    window.matchEnvoySkill("speaking");
+  });
+  // Also run immediately in case DOM is already ready
+  if(document.readyState !== "loading") {
+    window.selectRolePillar("outreach");
+    window.matchEnvoySkill("speaking");
+  }
+
+  // ============================================================
+  // DASHBOARD BACKGROUND — animated constellation canvas
+  // Runs only when #homepage is active; pauses automatically
+  // when the landing page is visible to save GPU/battery.
+  // ============================================================
+  (function initDashBg(){
+    const canvas = document.getElementById('dashBgCanvas');
+    if(!canvas) return;
+    let raf, alive = false;
+    const ctx = canvas.getContext('2d');
+    let W, H, nodes = [], lines = [];
+    const NODE_COUNT = 65, MAX_DIST = 160, SPEED = 0.22;
+
+    function resize(){
+      W = canvas.width  = window.innerWidth;
+      H = canvas.height = window.innerHeight;
+    }
+
+    function mkNode(){
+      return {
+        x: Math.random()*W, y: Math.random()*H,
+        vx:(Math.random()-0.5)*SPEED, vy:(Math.random()-0.5)*SPEED,
+        r: 1 + Math.random()*1.6,
+        a: 0.3 + Math.random()*0.5
+      };
+    }
+
+    function init(){
+      resize();
+      nodes = Array.from({length:NODE_COUNT}, mkNode);
+    }
+
+    function tick(){
+      if(!alive) return;
+      ctx.clearRect(0, 0, W, H);
+
+      // Move nodes, bounce off edges
+      nodes.forEach(n => {
+        n.x += n.vx; n.y += n.vy;
+        if(n.x < 0 || n.x > W) n.vx *= -1;
+        if(n.y < 0 || n.y > H) n.vy *= -1;
+      });
+
+      // Draw connecting lines
+      for(let i=0;i<nodes.length;i++){
+        for(let j=i+1;j<nodes.length;j++){
+          const dx = nodes[i].x - nodes[j].x;
+          const dy = nodes[i].y - nodes[j].y;
+          const d  = Math.sqrt(dx*dx+dy*dy);
+          if(d < MAX_DIST){
+            const a = (1 - d/MAX_DIST)*0.28;
+            ctx.beginPath();
+            ctx.moveTo(nodes[i].x, nodes[i].y);
+            ctx.lineTo(nodes[j].x, nodes[j].y);
+            ctx.strokeStyle = `rgba(223,184,90,${a.toFixed(3)})`;
+            ctx.lineWidth = 0.75;
+            ctx.stroke();
+          }
+        }
+      }
+
+      // Draw nodes
+      nodes.forEach(n => {
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, n.r, 0, Math.PI*2);
+        ctx.fillStyle = `rgba(243,226,175,${n.a.toFixed(2)})`;
+        ctx.fill();
+      });
+
+      raf = requestAnimationFrame(tick);
+    }
+
+    function start(){
+      if(alive) return;
+      alive = true;
+      init();
+      raf = requestAnimationFrame(tick);
+    }
+
+    function stop(){
+      alive = false;
+      if(raf){ cancelAnimationFrame(raf); raf = null; }
+    }
+
+    window.addEventListener('resize', ()=>{ if(alive) resize(); });
+
+    // Watch #homepage visibility
+    const hp = document.getElementById('homepage');
+    if(hp){
+      const mo = new MutationObserver(()=>{
+        if(hp.classList.contains('active')) start(); else stop();
+      });
+      mo.observe(hp, {attributes:true, attributeFilter:['class']});
+      // In case already active at load
+      if(hp.classList.contains('active')) start();
+    }
+
+    // Respect reduced-motion preference
+    try{
+      if(window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+        canvas.style.display='none'; return;
+      }
+    }catch(_){}
+  })();
+
+  </script>
+
+<!-- ============ SCROLL-EXPAND HERO ENGINE ============
+     Vanilla-JS port of the React Bits <ScrollExpand /> component
+     (JS + CSS variant) — same easing/measure/scroll logic, driven
+     off data-* attributes instead of props since this app has no
+     React/build step. -->
+<script>
+(function(){
+  "use strict";
+  var clamp=function(v,a,b){ return v<a?a:(v>b?b:v); };
+  var smoothstep=function(edge0,edge1,x){
+    var t=clamp((x-edge0)/((edge1-edge0)||1e-6),0,1);
+    return t*t*(3-2*t);
+  };
+
+  function initScrollExpand(root){
+    var track=root.querySelector(".scroll-expand__track");
+    var stage=root.querySelector(".scroll-expand__stage");
+    var frame=root.querySelector(".scroll-expand__frame");
+    var media=root.querySelector(".scroll-expand__media");
+    var title=root.querySelector(".scroll-expand__title");
+    var overlay=root.querySelector(".scroll-expand__overlay");
+    var scrim=root.querySelector(".scroll-expand__scrim");
+    var hint=root.querySelector(".scroll-expand__hint");
+    if(!track||!stage||!frame||!media) return;
+
+    var cfg={
+      startWidth: parseFloat(root.dataset.startWidth||"42"),
+      startHeight: parseFloat(root.dataset.startHeight||"58"),
+      startRadius: parseFloat(root.dataset.startRadius||"24"),
+      endRadius: parseFloat(root.dataset.endRadius||"0"),
+      mediaZoom: parseFloat(root.dataset.mediaZoom||"1.35"),
+      scrollDistance: parseFloat(root.dataset.scrollDistance||"1.2"),
+      holdDistance: parseFloat(root.dataset.holdDistance||"0.35"),
+      smoothing: root.dataset.smoothing!==undefined ? parseFloat(root.dataset.smoothing) : 0.1,
+      overlayScrim: parseFloat(root.dataset.overlayScrim||"0.45"),
+      useWindowScroll: root.dataset.windowScroll==="true",
+      enabled: root.dataset.enabled!=="false"
+    };
+
+    var reduceMotion=false;
+    try{ reduceMotion = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches); }catch(e){}
+    var raf=0, current=0, target=0, stageH=0, running=false;
+
+    function applyProgress(p){
+      var e=smoothstep(0,1,p);
+      var w=cfg.startWidth+(100-cfg.startWidth)*e;
+      var h=cfg.startHeight+(100-cfg.startHeight)*e;
+      var ix=Math.max(0,(100-w)/2), iy=Math.max(0,(100-h)/2);
+      var r=cfg.startRadius+(cfg.endRadius-cfg.startRadius)*e;
+      frame.style.clipPath="inset("+iy+"% "+ix+"% "+iy+"% "+ix+"% round "+r+"px)";
+      media.style.transform="scale("+(cfg.mediaZoom+(1-cfg.mediaZoom)*e)+")";
+      if(scrim) scrim.style.opacity=String(cfg.overlayScrim*e);
+      if(title){
+        var out=smoothstep(0.4,0.88,p);
+        title.style.opacity=String(1-out);
+        title.style.transform="translate3d(0, "+(-28*out)+"px, 0) scale("+(1+0.06*out)+")";
+      }
+      if(hint){
+        var gone=smoothstep(0,0.12,p);
+        hint.style.opacity=String(1-gone);
+        hint.style.transform="translate3d(0, "+(8*gone)+"px, 0)";
+      }
+      if(overlay){
+        var inn=smoothstep(0.68,1,p);
+        overlay.style.opacity=String(inn);
+        overlay.style.transform="translate3d(0, "+(18*(1-inn))+"px, 0)";
+        overlay.style.pointerEvents = inn>0.5 ? "auto" : "none";
+      }
+    }
+
+    function measure(){
+      stageH = cfg.useWindowScroll ? window.innerHeight : root.clientHeight;
+      if(stageH<=0) return;
+      stage.style.height=stageH+"px";
+      track.style.height=(stageH*(1+Math.max(0,cfg.scrollDistance)+Math.max(0,cfg.holdDistance)))+"px";
+      var w=root.clientWidth||stageH;
+      stage.style.setProperty("--se-title-size", clamp(w*0.075,20,84)+"px");
+    }
+
+    function readProgress(){
+      if(!cfg.enabled) return 1;
+      var span=stageH*Math.max(0.01,cfg.scrollDistance);
+      if(cfg.useWindowScroll){
+        var top=track.getBoundingClientRect().top;
+        return clamp(-top/span,0,1);
+      }
+      return clamp(root.scrollTop/span,0,1);
+    }
+
+    function tick(){
+      var k=cfg.smoothing<=0 ? 1 : 1-Math.exp(-1/(60*cfg.smoothing));
+      current+=(target-current)*k;
+      if(Math.abs(target-current)<0.0004){ current=target; running=false; }
+      applyProgress(current);
+      raf = running ? requestAnimationFrame(tick) : 0;
+    }
+    function kick(){ if(running) return; running=true; if(!raf) raf=requestAnimationFrame(tick); }
+
+    function onScroll(){
+      target=readProgress();
+      if(cfg.smoothing<=0||reduceMotion){ current=target; applyProgress(current); return; }
+      kick();
+    }
+    function onResize(){ measure(); target=readProgress(); current=target; applyProgress(current); }
+
+    measure(); target=readProgress(); current=target; applyProgress(current);
+
+    var scroller = cfg.useWindowScroll ? window : root;
+    scroller.addEventListener("scroll", onScroll, {passive:true});
+    window.addEventListener("resize", onResize);
+    if("ResizeObserver" in window){ new ResizeObserver(onResize).observe(root); }
+  }
+
+  function initAll(){
+    var nodes=document.querySelectorAll(".scroll-expand");
+    for(var i=0;i<nodes.length;i++){
+      try{ initScrollExpand(nodes[i]); }
+      catch(e){
+        /* Never let one bad browser quirk blank the whole hero — fall back
+           to a fully-expanded, fully-legible static state. */
+        var root=nodes[i];
+        var stage=root.querySelector(".scroll-expand__stage");
+        var frame=root.querySelector(".scroll-expand__frame");
+        var overlay=root.querySelector(".scroll-expand__overlay");
+        var hint=root.querySelector(".scroll-expand__hint");
+        if(stage) stage.style.height="100vh";
+        if(frame) frame.style.clipPath="inset(0 round 0px)";
+        if(overlay){ overlay.style.opacity="1"; overlay.style.transform="none"; overlay.style.pointerEvents="auto"; }
+        if(hint) hint.style.display="none";
+      }
+    }
+  }
+  if(document.readyState==="loading"){
+    document.addEventListener("DOMContentLoaded", initAll);
+  } else {
+    initAll();
+  }
+})();
+</script>
+
+<!-- ============ LIGHT RAYS ENGINE ============
+     Vanilla-JS port of React Bits <LightRays/> (JS + CSS variant).
+     The original is a React component built on the `ogl` WebGL
+     library; since this app is plain HTML/JS with no React or
+     bundler, this loads `ogl` as an ES module from a CDN and
+     reimplements the same renderer/shader/lifecycle logic as a
+     small, self-cleaning `initLightRays(container, options)`
+     function instead of hooks. Same shaders, same math — only
+     the state management changed (module-local closures instead
+     of useRef/useEffect), plus a gold tint and lower opacity via
+     CSS to fit the guild theme instead of the component's white
+     default. -->
+<script type="module">
+(async function(){
+  let reduceMotion = false;
+  try{ reduceMotion = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches); }catch(e){}
+  if(reduceMotion) return; // decorative only — respect the user's motion preference
+
+  const container = document.getElementById("heroLightRays");
+  if(!container){ console.warn("LightRays: #heroLightRays container not found in the DOM."); return; }
+
+  let Renderer, Program, Triangle, Mesh;
+  const cdns = [
+    "https://esm.sh/ogl@1.0.11",
+    "https://cdn.jsdelivr.net/npm/ogl@1.0.11/+esm",
+    "https://unpkg.com/ogl@1.0.11/src/index.mjs"
+  ];
+  let loaded = false;
+  for(const url of cdns){
+    try{
+      console.info("LightRays: trying to load ogl from", url);
+      const mod = await import(url);
+      ({ Renderer, Program, Triangle, Mesh } = mod);
+      if(Renderer && Program && Triangle && Mesh){
+        console.info("LightRays: ogl loaded successfully from", url);
+        loaded = true;
+        break;
+      }
+    }catch(err){
+      console.warn("LightRays: failed to load ogl from", url, err);
+    }
+  }
+  if(!loaded){
+    console.warn("LightRays: could not load the 'ogl' dependency from any CDN — skipping decorative rays. Check your network/firewall access to esm.sh, jsdelivr.net, or unpkg.com.");
+    return;
+  }
+
+  const hexToRgb = hex => {
+    const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return m ? [parseInt(m[1],16)/255, parseInt(m[2],16)/255, parseInt(m[3],16)/255] : [1,1,1];
+  };
+
+  const getAnchorAndDir = (origin, w, h) => {
+    const outside = 0.2;
+    switch(origin){
+      case 'top-left': return { anchor:[0, -outside*h], dir:[0,1] };
+      case 'top-right': return { anchor:[w, -outside*h], dir:[0,1] };
+      case 'left': return { anchor:[-outside*w, 0.5*h], dir:[1,0] };
+      case 'right': return { anchor:[(1+outside)*w, 0.5*h], dir:[-1,0] };
+      case 'bottom-left': return { anchor:[0, (1+outside)*h], dir:[0,-1] };
+      case 'bottom-center': return { anchor:[0.5*w, (1+outside)*h], dir:[0,-1] };
+      case 'bottom-right': return { anchor:[w, (1+outside)*h], dir:[0,-1] };
+      default: return { anchor:[0.5*w, -outside*h], dir:[0,1] }; // "top-center"
+    }
+  };
+
+  const VERT = `
+attribute vec2 position;
+varying vec2 vUv;
+void main() {
+  vUv = position * 0.5 + 0.5;
+  gl_Position = vec4(position, 0.0, 1.0);
+}`;
+
+  const FRAG = `precision highp float;
+
+uniform float iTime;
+uniform vec2  iResolution;
+
+uniform vec2  rayPos;
+uniform vec2  rayDir;
+uniform vec3  raysColor;
+uniform float raysSpeed;
+uniform float lightSpread;
+uniform float rayLength;
+uniform float pulsating;
+uniform float fadeDistance;
+uniform float saturation;
+uniform vec2  mousePos;
+uniform float mouseInfluence;
+uniform float noiseAmount;
+uniform float distortion;
+uniform float lightMode;
+
+varying vec2 vUv;
+
+float noise(vec2 st) {
+  return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
+}
+
+float rayStrength(vec2 raySource, vec2 rayRefDirection, vec2 coord,
+                  float seedA, float seedB, float speed) {
+  vec2 sourceToCoord = coord - raySource;
+  vec2 dirNorm = normalize(sourceToCoord);
+  float cosAngle = dot(dirNorm, rayRefDirection);
+
+  float distortedAngle = cosAngle + distortion * sin(iTime * 2.0 + length(sourceToCoord) * 0.01) * 0.2;
+
+  float spreadFactor = pow(max(distortedAngle, 0.0), 1.0 / max(lightSpread, 0.001));
+
+  float distance = length(sourceToCoord);
+  float maxDistance = iResolution.x * rayLength;
+  float lengthFalloff = clamp((maxDistance - distance) / maxDistance, 0.0, 1.0);
+
+  float fadeFalloff = clamp((iResolution.x * fadeDistance - distance) / (iResolution.x * fadeDistance), 0.5, 1.0);
+  float pulse = pulsating > 0.5 ? (0.8 + 0.2 * sin(iTime * speed * 3.0)) : 1.0;
+
+  float baseStrength = clamp(
+    (0.45 + 0.15 * sin(distortedAngle * seedA + iTime * speed)) +
+    (0.3 + 0.2 * cos(-distortedAngle * seedB + iTime * speed)),
+    0.0, 1.0
+  );
+
+  return baseStrength * lengthFalloff * fadeFalloff * spreadFactor * pulse;
+}
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  vec2 coord = vec2(fragCoord.x, iResolution.y - fragCoord.y);
+
+  vec2 finalRayDir = rayDir;
+  if (mouseInfluence > 0.0) {
+    vec2 mouseScreenPos = mousePos * iResolution.xy;
+    vec2 mouseDirection = normalize(mouseScreenPos - rayPos);
+    finalRayDir = normalize(mix(rayDir, mouseDirection, mouseInfluence));
+  }
+
+  vec4 rays1 = vec4(1.0) *
+               rayStrength(rayPos, finalRayDir, coord, 36.2214, 21.11349,
+                           1.5 * raysSpeed);
+  vec4 rays2 = vec4(1.0) *
+               rayStrength(rayPos, finalRayDir, coord, 22.3991, 18.0234,
+                           1.1 * raysSpeed);
+
+  fragColor = rays1 * 0.5 + rays2 * 0.4;
+
+  if (noiseAmount > 0.0) {
+    float n = noise(coord * 0.01 + iTime * 0.1);
+    fragColor.rgb *= (1.0 - noiseAmount + noiseAmount * n);
+  }
+
+  float brightness = 1.0 - (coord.y / iResolution.y);
+  fragColor.x *= 0.1 + brightness * 0.8;
+  fragColor.y *= 0.3 + brightness * 0.6;
+  fragColor.z *= 0.5 + brightness * 0.5;
+
+  if (saturation != 1.0) {
+    float gray = dot(fragColor.rgb, vec3(0.299, 0.587, 0.114));
+    fragColor.rgb = mix(vec3(gray), fragColor.rgb, saturation);
+  }
+
+  fragColor.rgb *= raysColor;
+
+  if (lightMode > 0.5) {
+    vec3 mapped = vec3(1.0) - exp(-max(fragColor.rgb, vec3(0.0)) * 1.35);
+    float energy = clamp(max(mapped.r, max(mapped.g, mapped.b)), 0.0, 1.0);
+    vec3 hue = mapped / max(energy, 0.0001);
+    vec3 ink = mix(hue * 0.25, hue * 0.72, energy);
+    fragColor = vec4(mix(vec3(1.0), ink, energy), 1.0);
+  }
+}
+
+void main() {
+  vec4 color;
+  mainImage(color, gl_FragCoord.xy);
+  gl_FragColor  = color;
+}`;
+
+  function initLightRays(el, opts){
+    const {
+      raysOrigin='top-center', raysColor='#ffffff', raysSpeed=1, lightSpread=1, rayLength=2,
+      pulsating=false, fadeDistance=1.0, saturation=1.0, followMouse=true, mouseInfluence=0.1,
+      noiseAmount=0.0, distortion=0.0, lightMode=false
+    } = opts || {};
+
+    let renderer;
+    try{
+      renderer = new Renderer({ dpr: Math.min(window.devicePixelRatio, 2), alpha: true });
+    }catch(e){
+      console.warn("LightRays: WebGL renderer could not be created (your browser/GPU may not support WebGL here).", e);
+      return function noop(){};
+    }
+    const gl = renderer.gl;
+    gl.canvas.style.width = '100%';
+    gl.canvas.style.height = '100%';
+    while(el.firstChild) el.removeChild(el.firstChild);
+    el.appendChild(gl.canvas);
+
+    const uniforms = {
+      iTime: { value: 0 },
+      iResolution: { value: [1, 1] },
+      rayPos: { value: [0, 0] },
+      rayDir: { value: [0, 1] },
+      raysColor: { value: hexToRgb(raysColor) },
+      raysSpeed: { value: raysSpeed },
+      lightSpread: { value: lightSpread },
+      rayLength: { value: rayLength },
+      pulsating: { value: pulsating ? 1.0 : 0.0 },
+      fadeDistance: { value: fadeDistance },
+      saturation: { value: saturation },
+      mousePos: { value: [0.5, 0.5] },
+      mouseInfluence: { value: mouseInfluence },
+      noiseAmount: { value: noiseAmount },
+      distortion: { value: distortion },
+      lightMode: { value: lightMode ? 1.0 : 0.0 }
+    };
+
+    const geometry = new Triangle(gl);
+    const program = new Program(gl, { vertex: VERT, fragment: FRAG, uniforms });
+    const mesh = new Mesh(gl, { geometry, program });
+
+    let mouse = { x: 0.5, y: 0.5 };
+    let smoothMouse = { x: 0.5, y: 0.5 };
+    let raf = 0;
+    let alive = true;
+
+    function updatePlacement(){
+      if(!alive) return;
+      renderer.dpr = Math.min(window.devicePixelRatio, 2);
+      const { clientWidth: wCSS, clientHeight: hCSS } = el;
+      if(wCSS === 0 || hCSS === 0){
+        console.warn("LightRays: container has zero size right now (", wCSS, "x", hCSS, ") — will retry when it resizes.");
+        return;
+      }
+      renderer.setSize(wCSS, hCSS);
+      const dpr = renderer.dpr;
+      const w = wCSS * dpr, h = hCSS * dpr;
+      uniforms.iResolution.value = [w, h];
+      const { anchor, dir } = getAnchorAndDir(raysOrigin, w, h);
+      uniforms.rayPos.value = anchor;
+      uniforms.rayDir.value = dir;
+    }
+
+    function loop(t){
+      if(!alive) return;
+      uniforms.iTime.value = t * 0.001;
+      if(followMouse && mouseInfluence > 0.0){
+        const smoothing = 0.92;
+        smoothMouse.x = smoothMouse.x * smoothing + mouse.x * (1 - smoothing);
+        smoothMouse.y = smoothMouse.y * smoothing + mouse.y * (1 - smoothing);
+        uniforms.mousePos.value = [smoothMouse.x, smoothMouse.y];
+      }
+      try{
+        renderer.render({ scene: mesh });
+        raf = requestAnimationFrame(loop);
+      }catch(err){
+        console.warn("LightRays: rendering stopped.", err);
+      }
+    }
+
+    function onMouseMove(e){
+      const rect = el.getBoundingClientRect();
+      if(rect.width === 0 || rect.height === 0) return;
+      mouse = { x: (e.clientX - rect.left) / rect.width, y: (e.clientY - rect.top) / rect.height };
+    }
+
+    window.addEventListener('resize', updatePlacement);
+    if(followMouse) window.addEventListener('mousemove', onMouseMove);
+    let ro = null;
+    if("ResizeObserver" in window){
+      ro = new ResizeObserver(() => updatePlacement());
+      ro.observe(el);
+    }
+    updatePlacement();
+    console.info("LightRays: renderer initialized, container size is", el.clientWidth, "x", el.clientHeight);
+    raf = requestAnimationFrame(loop);
+
+    return function cleanup(){
+      alive = false;
+      if(raf) cancelAnimationFrame(raf);
+      window.removeEventListener('resize', updatePlacement);
+      if(followMouse) window.removeEventListener('mousemove', onMouseMove);
+      if(ro) ro.disconnect();
+      try{
+        const ext = gl.getExtension('WEBGL_lose_context');
+        if(ext) ext.loseContext();
+        if(gl.canvas && gl.canvas.parentNode) gl.canvas.parentNode.removeChild(gl.canvas);
+      }catch(err){ /* ignore teardown errors */ }
+    };
+  }
+
+  // Only run the WebGL rays while the hero is actually on screen.
+  let cleanupFn = null;
+  const io = new IntersectionObserver((entries) => {
+    const visible = entries[0] && entries[0].isIntersecting;
+    console.info("LightRays: hero visibility changed ->", visible);
+    if(visible && !cleanupFn){
+      cleanupFn = initLightRays(container, {
+        raysOrigin: 'top-center',
+        raysColor: '#eccf6c',   // guild gold, matches --gold-light
+        raysSpeed: 1.1,
+        lightSpread: 0.7,
+        rayLength: 1.3,
+        pulsating: true,
+        fadeDistance: 1.0,
+        saturation: 1.0,
+        followMouse: true,
+        mouseInfluence: 0.12,
+        noiseAmount: 0.08,
+        distortion: 0.03
+      });
+    } else if(!visible && cleanupFn){
+      cleanupFn();
+      cleanupFn = null;
+    }
+  }, { threshold: 0.05 });
+  io.observe(container);
+})();
+</script>
+
+</body>
+</html>

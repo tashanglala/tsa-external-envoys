@@ -1,0 +1,78 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function isAdmin() {
+      return signedIn()
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.active == true;
+    }
+    function sameUser(uid) { return signedIn() && request.auth.uid == uid; }
+
+    match /users/{uid} {
+      allow read: if sameUser(uid) || isAdmin();
+
+      // First-time account creation from the app may only create a member.
+      // The initial admin should be created manually in Firestore/Auth.
+      allow create: if sameUser(uid)
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.role == 'member'
+        && request.resource.data.active == true
+        && get(/databases/$(database)/documents/roster/$(request.auth.token.email)).data.active == true;
+
+      allow update: if isAdmin()
+        || (sameUser(uid)
+            && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['displayName','course','bio','updatedAt']));
+      allow delete: if isAdmin();
+    }
+
+    match /roster/{emailKey} {
+      // Only the specific roster entry is readable before login so the app can
+      // verify whether an email is approved. Keep roster documents non-sensitive.
+      allow get: if true;
+      allow list: if isAdmin();
+      allow write: if isAdmin();
+    }
+
+    match /tasks/{taskId} {
+      allow read: if isAdmin() || (signedIn() && resource.data.assignedTo == request.auth.uid);
+      allow create: if isAdmin();
+      allow update: if isAdmin()
+        || (signedIn() && resource.data.assignedTo == request.auth.uid
+            && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['status','submission']));
+      allow delete: if isAdmin();
+    }
+
+    match /partners/{partnerId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /documents/{documentId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /applications/{applicationId} {
+      allow create: if true;
+      allow read, update, delete: if isAdmin();
+    }
+
+    match /notifications/{notificationId} {
+      allow read: if isAdmin() || (signedIn() && resource.data.userId == request.auth.uid);
+      allow create: if isAdmin() || (signedIn() && request.resource.data.userId == request.auth.uid);
+      allow update: if signedIn()
+        && (isAdmin() || resource.data.userId == request.auth.uid);
+      allow delete: if isAdmin();
+    }
+
+    match /mail/{mailId} {
+      // Only admins may enqueue email. The Trigger Email extension processes it.
+      allow create: if isAdmin();
+      allow read, update, delete: if isAdmin();
+    }
+  }
+}

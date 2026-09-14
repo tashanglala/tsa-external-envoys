@@ -1,0 +1,7 @@
+{
+  "projects": {
+    "default": "tsa-external-envoys"
+  },
+  "targets": {},
+  "etags": {}
+}

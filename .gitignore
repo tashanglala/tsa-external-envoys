@@ -1,0 +1,11 @@
+# Never commit this — it's a Firebase Admin SDK key with full project access
+serviceAccountKey.json
+
+# Local dependency / log noise
+node_modules/
+firebase-debug.log
+*.log
+
+# Editor/OS junk
+.DS_Store
+Thumbs.db

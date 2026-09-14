@@ -1,0 +1,1211 @@
+1: 
+2:   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+3:   import {
+4:     getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword,
+5:     signInWithPopup, GoogleAuthProvider, signOut, sendPasswordResetEmail
+6:   } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+7:   import {
+8:     getFirestore, collection, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc,
+9:     query, where, orderBy, onSnapshot, serverTimestamp, getDocs
+10:   } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+11:   import {
+12:     getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject
+13:   } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-storage.js";
+14: 
+15:   // ============================================================
+16:   // FIREBASE CONFIG — replace these placeholders with your
+17:   // Firebase Web App config from Project settings > Your apps.
+18:   // ============================================================
+19:  const firebaseConfig = {
+20:   apiKey: "AIzaSyC8v5jO4k3stlWLeV8tdxAejniCgWH9cCY",
+21:   authDomain: "tsa-external-envoys.firebaseapp.com",
+22:   projectId: "tsa-external-envoys",
+23:   storageBucket: "tsa-external-envoys.firebasestorage.app",
+24:   messagingSenderId: "574131845122",
+25:   appId: "1:574131845122:web:0e5be07325570839dc0f1b"
+26: };
+27: 
+28:   const firebaseConfigured = !Object.values(firebaseConfig).some(v => String(v).startsWith("YOUR_"));
+29:   let app, auth, db, storage, googleProvider;
+30:   let currentUser = null;
+31:   let currentProfile = null;
+32:   let unsubscribers = [];
+33:   let docFilter = "all";
+34:   let realtime = {tasks:[], partners:[], applications:[], documents:[], notifications:[], members:[]};
+35: 
+36:   if(firebaseConfigured){
+37:     app = initializeApp(firebaseConfig);
+38:     auth = getAuth(app);
+39:     db = getFirestore(app);
+40:     storage = getStorage(app);
+41:     googleProvider = new GoogleAuthProvider();
+42:     googleProvider.setCustomParameters({prompt:"select_account"});
+43:   } else {
+44:     const banner = document.getElementById("setupBanner");
+45:     banner.textContent = "Firebase is not configured yet. Add your Firebase Web App config to enable secure login, shared data, MOA storage, and email notifications.";
+46:     banner.classList.add("show");
+47:   }
+48: 
+49:   const $ = id => document.getElementById(id);
+50:   const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+51:   const showToast = (msg,type="ok") => {
+52:     let t=$("toast"); if(!t){t=document.createElement("div");t.id="toast";t.className="toast";document.body.appendChild(t);}
+53:     t.innerHTML=`<span class="toast-icon">${type==="error"?"⚠":"✓"}</span><span>${esc(msg)}</span>`;
+54:     t.className="toast show"+(type==="error"?" toast-error":"");
+55:     clearTimeout(window._toastTimer); window._toastTimer=setTimeout(()=>t.classList.remove("show"),2600);
+56:   };
+57:   window.showToast=showToast;
+58: 
+59:   function friendlyAuthError(e){
+60:     const c=e?.code||"";
+61:     const map={
+62:       "auth/invalid-credential":"Email or password is incorrect.",
+63:       "auth/user-not-found":"No Firebase account exists for that email yet.",
+64:       "auth/wrong-password":"Email or password is incorrect.",
+65:       "auth/email-already-in-use":"That email already has a Firebase account. Try logging in.",
+66:       "auth/weak-password":"Use a stronger password with at least 6 characters.",
+67:       "auth/popup-closed-by-user":"Google sign-in was cancelled.",
+68:       "auth/popup-blocked":"Your browser blocked the Google sign-in popup. Allow popups and try again.",
+69:       "auth/too-many-requests":"Too many attempts. Please wait a moment and try again.",
+70:       "auth/network-request-failed":"Network error. Check your internet connection."
+71:     };
+72:     return map[c] || e?.message || "Authentication failed.";
+73:   }
+74: 
+75:   async function getProfile(uid){
+76:     const snap=await getDoc(doc(db,"users",uid));
+77:     return snap.exists()?{id:snap.id,...snap.data()}:null;
+78:   }
+79:   async function rosterByEmail(email){
+80:     const normalized=email.trim().toLowerCase();
+81:     const direct=await getDoc(doc(db,"roster",normalized));
+82:     return direct.exists()?{id:direct.id,...direct.data()}:null;
+83:   }
+84:   function emailKey(email){ return email.trim().toLowerCase(); }
+85: 
+86:   // ---------- UI ----------
+87:   window.openModal = which => { const x=$(which+"Overlay"); if(x)x.classList.add("open"); };
+88:   window.closeModal = which => { const x=$(which+"Overlay"); if(x)x.classList.remove("open"); };
+89:   window.switchModal = target => { document.querySelectorAll(".overlay.open").forEach(x=>x.classList.remove("open")); openModal(target); };
+90:   window.toggleForm = id => { const x=$(id); if(x)x.style.display=x.style.display==="none"?"block":"none"; };
+91:   window.togglePw = (id,btn) => { const x=$(id); const showing=x.type==="text"; x.type=showing?"password":"text"; btn.textContent=showing?"Show":"Hide"; };
+92:   window.openSignup=()=>{closeModal("login");openModal("signup");};
+93:   window.showPanel=name=>{
+94:     document.querySelectorAll(".dash-panel").forEach(p=>p.classList.remove("active"));
+95:     document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
+96:     const p=$("panel-"+name); if(!p)return; p.classList.add("active");
+97:     const b=document.querySelector(`.tab-btn[data-tab="${name}"]`); if(b)b.classList.add("active");
+98:     if(!window.matchMedia("(prefers-reduced-motion: reduce)").matches){
+99:       p.classList.add("panel-enter"); requestAnimationFrame(()=>requestAnimationFrame(()=>p.classList.remove("panel-enter")));
+100:     }
+101:     if(name==="documents") renderDocuments();
+102:     if(name==="tasks") renderTasks();
+103:     window.toggleSidebar(false);
+104:   };
+105: 
+106:   window.toggleSidebar=(force)=>{
+107:     const tabs=$("dashTabs"), backdrop=$("sidebarBackdrop");
+108:     if(!tabs) return;
+109:     const open = force!==undefined ? force : !tabs.classList.contains("open");
+110:     tabs.classList.toggle("open", open);
+111:     if(backdrop) backdrop.classList.toggle("open", open);
+112:     document.body.classList.toggle("sidebar-lock", open);
+113:   };
+114: 
+115:   window.toggleNotifications=()=>{
+116:     const panel=$("notificationPanel"); if(!panel)return;
+117:     panel.classList.toggle("open"); renderNotifications();
+118:   };
+119: 
+120:   function initials(name,email){ return (name||email||"T").split(/\s+/).slice(0,2).map(x=>x[0]).join("").toUpperCase(); }
+121:   function renderUserHeader(){
+122:     $("roleBadge").textContent=currentProfile?.role==="admin"?"COUNCIL ADMIN":"ENVOY";
+123:     const av=$("userAvatar"); av.textContent=initials(currentProfile?.displayName,currentUser?.email);
+124:     if(currentUser?.photoURL) av.innerHTML=`<img src="${esc(currentUser.photoURL)}" alt="">`;
+125:     const idAv=$("idCardAvatar");
+126:     if(idAv){
+127:       idAv.textContent=initials(currentProfile?.displayName,currentUser?.email);
+128:       if(currentUser?.photoURL) idAv.innerHTML=`<img src="${esc(currentUser.photoURL)}" alt="">`;
+129:     }
+130:     const idRole=$("idCardRole");
+131:     if(idRole) idRole.textContent=currentProfile?.role==="admin"?"Council Admin":"External Envoy";
+132:   }
+133: 
+134:   // ---------- Auth ----------
+135:   window.handleLogin=async e=>{
+136:     e.preventDefault();
+137:     if(!firebaseConfigured){$("loginError").textContent="Firebase configuration is missing.";return;}
+138:     const email=$("loginEmail").value.trim().toLowerCase(), pass=$("loginPassword").value;
+139:     $("loginError").textContent=""; $("loginSubmitBtn").disabled=true; $("loginSubmitBtn").textContent="Authenticating…";
+140:     try{
+141:       const roster=await rosterByEmail(email);
+142:       if(!roster || roster.active===false) throw new Error("This email is not active on the TSA roster. Ask an admin to add or activate you.");
+143:       await signInWithEmailAndPassword(auth,email,pass);
+144:     }catch(e){$("loginError").textContent=friendlyAuthError(e);}
+145:     finally{$("loginSubmitBtn").disabled=false;$("loginSubmitBtn").textContent="Enter the Guild Hall";}
+146:   };
+147: 
+148:   window.handleSignup=async e=>{
+149:     e.preventDefault();
+150:     $("signupError").textContent="";
+151:     const email=$("signupEmail").value.trim().toLowerCase(), p=$("signupPassword").value, c=$("signupConfirm").value;
+152:     if(p!==c){$("signupError").textContent="Passwords do not match.";return;}
+153:     try{
+154:       if(!firebaseConfigured) throw new Error("Firebase configuration is missing.");
+155:       const cred=await createUserWithEmailAndPassword(auth,email,p);
+156:       let roster=null;
+157:       try{ roster=await rosterByEmail(email); }catch(_){}
+158:       if(!roster || roster.active===false){
+159:         await signOut(auth);
+160:         $("signupError").textContent="Your account was created, but this email is not on the active TSA roster. Ask an admin to add it before signing in.";
+161:         return;
+162:       }
+163:       const role=roster.role==="admin"?"admin":"member";
+164:       await setDoc(doc(db,"users",cred.user.uid),{
+165:         email, displayName:roster.name||cred.user.displayName||email.split("@")[0],
+166:         role, active:true, course:roster.course||"", bio:"",
+167:         createdAt:serverTimestamp(), updatedAt:serverTimestamp()
+168:       });
+169:       closeModal("signup"); showToast("Account created. Welcome to the guild.");
+170:     }catch(e){$("signupError").textContent=friendlyAuthError(e);}
+171:   };
+172: 
+173: window.signInWithGoogle=async()=>{
+174:   if(!firebaseConfigured){
+175:     showToast("Firebase configuration is missing.","error");
+176:     return;
+177:   }
+178: 
+179:   try{
+180:     const result=await signInWithPopup(auth,googleProvider);
+181:     const email=result.user.email?.toLowerCase();
+182: 
+183:     const roster=await rosterByEmail(email);
+184: 
+185:     if(!roster || roster.active===false){
+186:       await signOut(auth);
+187:       $("loginError").textContent =
+188:         "This Google account is not on the active TSA roster. Ask an admin to add you first.";
+189:       return;
+190:     }
+191: 
+192:     const existing=await getDoc(doc(db,"users",result.user.uid));
+193: 
+194:     if(!existing.exists()){
+195:       await setDoc(doc(db,"users",result.user.uid),{
+196:         email,
+197:         displayName:roster.name||result.user.displayName||email.split("@")[0],
+198:         role:roster.role==="admin"?"admin":"member",
+199:         active:true,
+200:         course:roster.course||"",
+201:         bio:"",
+202:         createdAt:serverTimestamp(),
+203:         updatedAt:serverTimestamp()
+204:       });
+205:     }
+206: 
+207:     closeModal("login");
+208:     showToast("Signed in securely with Google.");
+209: 
+210:   }catch(e){
+211:     $("loginError").textContent=friendlyAuthError(e);
+212:   }
+213: };
+214:   window.sendPasswordReset=async()=>{
+215:     const email=$("loginEmail").value.trim().toLowerCase();
+216:     if(!email){$("loginError").textContent="Enter your email first, then tap Forgot password.";return;}
+217:     try{
+218:       const roster=await rosterByEmail(email);
+219:       if(!roster){$("loginError").textContent="That email is not on the TSA roster.";return;}
+220:       await sendPasswordResetEmail(auth,email);
+221:       $("loginError").textContent="Password reset email sent. Check your inbox.";
+222:     }catch(e){$("loginError").textContent=friendlyAuthError(e);}
+223:   };
+224: 
+225:   window.logout=async()=>{if(auth)await signOut(auth);};
+226:   window.addEventListener("load",()=>document.querySelectorAll(".overlay").forEach(ov=>ov.addEventListener("click",e=>{if(e.target===ov)closeModal(ov.id.replace("Overlay",""));})));
+227:   document.addEventListener("keydown",e=>{if(e.key==="Escape")document.querySelectorAll(".overlay.open").forEach(ov=>closeModal(ov.id.replace("Overlay","")));});
+228: 
+229:   // ---------- Real-time data ----------
+230:   function clearListeners(){unsubscribers.forEach(u=>u());unsubscribers=[];}
+231:   function listenCollection(name, target, qref){
+232:     const unsub=onSnapshot(qref,snap=>{realtime[target]=snap.docs.map(d=>({id:d.id,...d.data()})); refreshUI(target);},err=>console.error(name,err));
+233:     unsubscribers.push(unsub);
+234:   }
+235:   function refreshUI(target){
+236:     if(!currentProfile)return;
+237:     if(target==="tasks"){renderTasks();if(currentProfile.role==="admin")renderAssign();}
+238:     if(target==="partners")renderPartners();
+239:     if(target==="applications"&&currentProfile.role==="admin")renderApplications();
+240:     if(target==="documents"){renderDocuments();populateMoaSelectors();}
+241:     if(target==="notifications"){renderNotifications();updateNotifBadge();}
+242:     if(target==="members"&&currentProfile.role==="admin"){renderMembers();renderAssign();}
+243:   }
+244: 
+245:   function startRealtime(){
+246:     clearListeners();
+247:     const uid=currentUser.uid;
+248:     listenCollection("tasks","tasks",query(collection(db,"tasks"),where("assignedTo","==",uid)));
+249:     listenCollection("partners","partners",query(collection(db,"partners"),orderBy("name")));
+250:     listenCollection("documents","documents",query(collection(db,"documents"),orderBy("createdAt","desc")));
+251:     listenCollection("notifications","notifications",query(collection(db,"notifications"),where("userId","==",uid),orderBy("createdAt","desc")));
+252:     if(currentProfile.role==="admin"){
+253:       listenCollection("members","members",query(collection(db,"users"),orderBy("email")));
+254:       listenCollection("allTasks","tasks",query(collection(db,"tasks"),orderBy("createdAt","desc")));
+255:       listenCollection("applications","applications",query(collection(db,"applications"),orderBy("submittedAt","desc")));
+256:     }
+257:   }
+258: 
+259:   async function enterHomepage(){
+260:     document.body.classList.remove("role-admin","role-member");
+261:     document.body.classList.add(currentProfile.role==="admin"?"role-admin":"role-member");
+262:     $("welcomeName").textContent="Welcome back, "+(currentProfile.displayName||currentUser.email.split("@")[0]);
+263:     $("welcomeSub").textContent=currentProfile.role==="admin"?"The Council's live ledger is open. Manage tasks, members, applications, and MOAs.":"The guild hall is open. Your tasks, MOA references, and notifications are here.";
+264:     const idName=$("idCardName"); if(idName) idName.textContent=currentProfile.displayName||currentUser.email.split("@")[0];
+265:     $("landing").classList.add("hidden"); $("homepage").classList.add("active");
+266:     renderUserHeader(); showPanel("tasks"); window.scrollTo(0,0); startRealtime();
+267:     requestAnimationFrame(()=>{
+268:       const tb=document.querySelector("#homepage .topbar");
+269:       if(tb) document.documentElement.style.setProperty("--topbar-h", tb.offsetHeight+"px");
+270:     });
+271:     await Promise.all([renderProfile(),renderPartners(),renderDocuments(),renderTasks(),renderOverview()]);
+272:     if(currentProfile.role==="admin") await Promise.all([renderMembers(),renderAssign(),renderApplications()]);
+273:   }
+274: 
+275:   if(auth){
+276:     onAuthStateChanged(auth,async user=>{
+277:       if(!user){currentUser=null;currentProfile=null;clearListeners();$("homepage").classList.remove("active");$("landing").classList.remove("hidden");return;}
+278:       try{
+279:         const profile=await getProfile(user.uid);
+280:         if(!profile || profile.active===false){await signOut(auth);showToast("Your account is not active.","error");return;}
+281:         currentUser=user;currentProfile=profile;closeModal("login");closeModal("signup");await enterHomepage();
+282:       }catch(e){console.error(e);showToast("Could not load your profile.","error");}
+283:     });
+284:   }
+285: 
+286:   // ---------- Tasks ----------
+287:   async function renderTasks(){
+288:     if(!currentProfile)return;
+289:     const mine=realtime.tasks.filter(t=>t.assignedTo===currentUser.uid);
+290:     const wrap=$("tasksList");
+291:     if(!mine.length)wrap.innerHTML='<p class="empty-note">No quests assigned to you yet. Check back soon.</p>';
+292:     else wrap.innerHTML=mine.map(taskCardHTML).join("");
+293:     const pending=mine.filter(t=>t.status==="pending").length, submitted=mine.filter(t=>t.status!=="pending").length;
+294:     animateNumber($("overviewPending"),pending);animateNumber($("overviewSubmitted"),submitted);animateNumber($("overviewPartners"),realtime.partners.length);
+295:     const badge=$("taskBadge");badge.style.display=pending?"inline-block":"none";badge.textContent=pending;
+296:   }
+297:   function animateNumber(el,to){if(!el)return;el.textContent=to;}
+298:   function taskCardHTML(t){
+299:     const status=t.status==="approved"?"Approved":t.status==="submitted"?"Submitted":"Pending";
+300:     const cls=t.status==="approved"?"st-approved":t.status==="submitted"?"st-submitted":"st-pending";
+301:     const priority=t.priority||"normal";
+302:     const moa=t.moaRefId?realtime.documents.find(d=>d.id===t.moaRefId):null;
+303:     return `<div class="task-card priority-${esc(priority)}">
+304:       <div class="task-top"><h3>${esc(t.title)}</h3><span class="status-badge ${cls}">${status}</span></div>
+305:       <div class="task-meta">${t.event?`<span class="meta-chip">🎪 ${esc(t.event)}</span>`:""}<span class="meta-chip">Priority: ${esc(priority)}</span>${t.dueDate?`<span class="meta-chip">Due: ${esc(t.dueDate)}</span>`:""}</div>
+306:       <p>${esc(t.description||"No description provided.")}</p>
+307:       ${moa?`<div class="inline-form"><strong>Reference MOA:</strong><p>${esc(moa.title)} · ${esc(moa.event)}</p><a class="btn btn-ghost btn-sm" href="${esc(moa.downloadUrl)}" target="_blank" rel="noopener">View / Download MOA</a></div>`:""}
+308:       ${t.status==="pending"?`<button class="btn btn-ghost btn-sm" onclick="toggleForm('submitForm-${esc(t.id)}')">Submit Task</button>
+309:       <div class="inline-form" id="submitForm-${esc(t.id)}" style="display:none;">
+310:         <div class="field"><label>What did you complete?</label><textarea id="submitText-${esc(t.id)}" placeholder="Describe what you did…"></textarea></div>
+311:         <div class="field"><label>Link (optional)</label><input id="submitLink-${esc(t.id)}" placeholder="Drive/Docs link"></div>
+312:         <button class="seal-submit" onclick="submitTask('${esc(t.id)}')">Seal & Submit</button>
+313:       </div>`:`<div class="inline-form"><strong>Your submission:</strong><p>${esc(t.submission?.text||"")}</p>${t.submission?.link?`<a href="${esc(t.submission.link)}" target="_blank" rel="noopener">${esc(t.submission.link)}</a>`:""}</div>`}
+314:     </div>`;
+315:   }
+316:   window.submitTask=async id=>{
+317:     const t=realtime.tasks.find(x=>x.id===id);if(!t||t.assignedTo!==currentUser.uid)return;
+318:     const text=$("submitText-"+id)?.value.trim();const link=$("submitLink-"+id)?.value.trim()||"";
+319:     if(!text){showToast("Describe what you completed first.");return;}
+320:     await updateDoc(doc(db,"tasks",id),{status:"submitted",submission:{text,link,submittedAt:serverTimestamp()}});
+321:     showToast("Task submitted to the Council.");
+322:     if(t.createdBy) await addDoc(collection(db,"notifications"),{userId:t.createdBy,type:"task_submitted",title:"Task submitted",body:`${currentProfile.displayName||currentUser.email} submitted "${t.title}".`,read:false,createdAt:serverTimestamp()});
+323:   };
+324: 
+325:   // ---------- Overview ----------
+326:   window.renderOverview=async()=>{await renderTasks();};
+327:   // ---------- Partners ----------
+328:   window.renderPartners=()=>{
+329:     const wrap=$("partnersList"),q=($("partnerSearch")?.value||"").trim().toLowerCase();
+330:     const list=realtime.partners.filter(p=>!q||(p.name||"").toLowerCase().includes(q)||(p.contact||"").toLowerCase().includes(q)||(p.email||"").toLowerCase().includes(q));
+331:     $("partnerAdminTools").style.display=currentProfile?.role==="admin"?"block":"none";
+332:     wrap.innerHTML=list.length?list.map(partnerCardHTML).join(""):'<p class="empty-note">No partner organizations match your search.</p>';
+333:   };
+334:   function partnerCardHTML(p){return `<div class="partner-card"><h3>${esc(p.name)}</h3><p>${esc(p.contact||"")}${p.contact&&p.email?" · ":""}${esc(p.email||"")}</p>${p.phone?`<p>${esc(p.phone)}</p>`:""}${p.notes?`<p class="partner-notes">${esc(p.notes)}</p>`:""}<div class="partner-actions"><button class="btn btn-ghost btn-sm" onclick="copyPartner('${esc(p.id)}')">Copy Info</button>${currentProfile?.role==="admin"?`<button class="btn btn-ghost btn-sm" onclick="editPartner('${esc(p.id)}')">Edit</button><button class="btn btn-ghost btn-sm" onclick="deletePartner('${esc(p.id)}')">Delete</button>`:""}</div></div>`;}
+335:   window.copyPartner=async id=>{const p=realtime.partners.find(x=>x.id===id);if(!p)return;try{await navigator.clipboard.writeText([p.name,p.contact,p.email,p.phone,p.notes].filter(Boolean).join("\n"));showToast("Copied to clipboard.");}catch(e){showToast("Could not copy.","error");}};
+336:   window.editPartner=async id=>{const p=realtime.partners.find(x=>x.id===id);if(!p)return;$("partnerEditId").value=p.id;$("partnerName").value=p.name||"";$("partnerContact").value=p.contact||"";$("partnerEmail").value=p.email||"";$("partnerPhone").value=p.phone||"";$("partnerNotes").value=p.notes||"";$("partnerSaveBtn").textContent="Save Changes";$("partnerForm").style.display="block";};
+337:   window.savePartnerForm=async()=>{if(currentProfile?.role!=="admin")return;const name=$("partnerName").value.trim();if(!name){$("partnerFormMsg").textContent="Organization name is required.";return;}const id=$("partnerEditId").value;const data={name,contact:$("partnerContact").value.trim(),email:$("partnerEmail").value.trim(),phone:$("partnerPhone").value.trim(),notes:$("partnerNotes").value.trim(),updatedAt:serverTimestamp()};if(id)await updateDoc(doc(db,"partners",id),data);else await addDoc(collection(db,"partners"),{...data,createdAt:serverTimestamp()});["partnerEditId","partnerName","partnerContact","partnerEmail","partnerPhone","partnerNotes"].forEach(i=>$(i).value="");$("partnerForm").style.display="none";showToast("Partner saved.");};
+338:   window.deletePartner=async id=>{if(currentProfile?.role!=="admin")return;if(confirm("Remove this partner organization?")){await deleteDoc(doc(db,"partners",id));showToast("Partner removed.");}};
+339: 
+340:   // ---------- Profile ----------
+341:   function renderProfileCard(){
+342:     const nameEl=$("profileCardName"),emailEl=$("profileCardEmail"),roleEl=$("profileCardRole"),avEl=$("profileAvatarBig");
+343:     if(!nameEl)return;
+344:     nameEl.textContent=currentProfile.displayName||currentUser.email.split("@")[0];
+345:     emailEl.textContent=currentUser.email;
+346:     roleEl.textContent=currentProfile.role==="admin"?"COUNCIL ADMIN":"ENVOY";
+347:     avEl.textContent=initials(currentProfile.displayName,currentUser.email);
+348:     if(currentUser.photoURL)avEl.innerHTML=`<img src="${esc(currentUser.photoURL)}" alt="">`;
+349:   }
+350:   function renderProfile(){if(!currentProfile)return;$("profileEmail").value=currentUser.email;$("profileName").value=currentProfile.displayName||"";$("profileCourse").value=currentProfile.course||"";$("profileBio").value=currentProfile.bio||"";renderProfileCard();}
+351:   window.saveProfile=async()=>{const name=$("profileName").value.trim(),course=$("profileCourse").value.trim(),bio=$("profileBio").value.trim();await updateDoc(doc(db,"users",currentUser.uid),{displayName:name,course,bio,updatedAt:serverTimestamp()});currentProfile={...currentProfile,displayName:name,course,bio};renderUserHeader();renderProfileCard();$("welcomeName").textContent="Welcome back, "+(name||currentUser.email.split("@")[0]);const idName=$("idCardName");if(idName)idName.textContent=name||currentUser.email.split("@")[0];$("profileMsg").textContent="Saved.";showToast("Profile updated.");};
+352:   window.changePassword=async()=>{showToast("Use 'Forgot password?' on the login screen to reset your Firebase password.");};
+353: 
+354:   // ---------- Admin members ----------
+355:   window.renderMembers=()=>{if(currentProfile?.role!=="admin")return;const q=($("memberSearch")?.value||"").trim().toLowerCase();const list=realtime.members.filter(m=>!q||(m.displayName||"").toLowerCase().includes(q)||(m.email||"").toLowerCase().includes(q));$("membersList").innerHTML=list.length?list.map(memberRowHTML).join(""):'<p class="empty-note">No members match your search.</p>';};
+356:   function memberRowHTML(m){const self=m.id===currentUser.uid;return `<div class="member-row"><div class="member-info"><strong>${esc(m.displayName||m.email)}</strong><span class="member-email">${esc(m.email)}</span></div><span class="status-pill ${m.role==="admin"?"pill-gold":""}">${esc(m.role||"member").toUpperCase()}</span><span class="status-pill ${m.active===false?"pill-off":""}">${m.active===false?"REVOKED":"ACTIVE"}</span><div class="member-actions">${!self?`<button class="btn btn-ghost btn-sm" onclick="toggleMemberAccess('${esc(m.id)}',${m.active!==false})">${m.active===false?"Grant":"Revoke"} Access</button><button class="btn btn-ghost btn-sm" onclick="toggleMemberRole('${esc(m.id)}','${esc(m.role||"member")}')">${m.role==="admin"?"Demote":"Promote"} Role</button>`:""} </div></div>`;}
+357:   window.toggleMemberAccess=async(uid,active)=>{if(currentProfile?.role!=="admin")return;await updateDoc(doc(db,"users",uid),{active:!active,updatedAt:serverTimestamp()});showToast(active?"Access revoked.":"Access granted.");};
+358:   window.toggleMemberRole=async(uid,role)=>{if(currentProfile?.role!=="admin")return;await updateDoc(doc(db,"users",uid),{role:role==="admin"?"member":"admin",updatedAt:serverTimestamp()});showToast("Role updated.");};
+359:   window.addMember=async()=>{if(currentProfile?.role!=="admin")return;const email=$("newMemberEmail").value.trim().toLowerCase(),role=$("newMemberRole").value;if(!email||!email.includes("@")){$("addMemberMsg").textContent="Enter a valid email.";return;}const existing=await rosterByEmail(email);if(existing){$("addMemberMsg").textContent="That email is already on the roster.";return;}await setDoc(doc(db,"roster",emailKey(email)),{email,name:"",role,active:true,createdAt:serverTimestamp(),createdBy:currentUser.uid});$("newMemberEmail").value="";$("addMemberMsg").textContent="Roster entry created. The member can now create a password account or use Google.";showToast("Envoy added to the roster.");};
+360: 
+361:   // ---------- Admin tasks ----------
+362:   window.renderAssign=()=>{if(currentProfile?.role!=="admin")return;const active=realtime.members.filter(m=>m.active!==false);$("taskAssignee").innerHTML=active.map(m=>`<option value="${esc(m.id)}">${esc(m.displayName||m.email)} — ${esc(m.email)}</option>`).join("");populateMoaSelectors();const tasks=realtime.tasks||[];const wrap=$("allTasksList");wrap.innerHTML=tasks.length?tasks.map(adminTaskHTML).join(""):'<p class="empty-note">No tasks assigned yet.</p>';const awaiting=tasks.filter(t=>t.status==="submitted").length;updateBadge("assignBadge",awaiting);};
+363:   function adminTaskHTML(t){const member=realtime.members.find(m=>m.id===t.assignedTo);return `<div class="task-card priority-${esc(t.priority||"normal")}"><div class="task-top"><h3>${esc(t.title)}</h3><span class="status-badge ${t.status==="approved"?"st-approved":t.status==="submitted"?"st-submitted":"st-pending"}">${esc(t.status||"pending")}</span></div><div class="task-meta">${t.event?`<span class="meta-chip">🎪 ${esc(t.event)}</span>`:""}<span class="meta-chip">To: ${esc(member?.displayName||member?.email||"Unknown")}</span>${t.dueDate?`<span class="meta-chip">Due: ${esc(t.dueDate)}</span>`:""}</div><p>${esc(t.description||"")}</p>${t.moaRefId?(()=>{const d=realtime.documents.find(x=>x.id===t.moaRefId);return d?`<p><a href="${esc(d.downloadUrl)}" target="_blank" rel="noopener" class="btn btn-ghost btn-sm">Reference MOA</a></p>`:""})():""}${t.status==="submitted"?`<div class="inline-form"><strong>Submission:</strong><p>${esc(t.submission?.text||"")}</p>${t.submission?.link?`<a href="${esc(t.submission.link)}" target="_blank" rel="noopener">${esc(t.submission.link)}</a>`:""}<br><button class="btn btn-gold btn-sm" onclick="approveTask('${esc(t.id)}')">Approve</button></div>`:""}</div>`;}
+364:   function populateMoaSelectors(){const refs=realtime.documents.filter(d=>d.type==="reference");const s=$("taskMoaRef");if(s)s.innerHTML='<option value="">No reference MOA</option>'+refs.map(d=>`<option value="${esc(d.id)}">${esc(d.event)} — ${esc(d.title)}</option>`).join("");}
+365:   window.createTask=async()=>{
+366:     if(currentProfile?.role!=="admin")return;
+367:     const title=$("taskTitle").value.trim(),assignedTo=$("taskAssignee").value,event=$("taskEvent").value.trim(),priority=$("taskPriority").value,description=$("taskDesc").value.trim(),dueDate=$("taskDue").value,moaRefId=$("taskMoaRef").value;
+368:     if(!title||!assignedTo){$("taskMsg").textContent="Title and assignee are required.";return;}
+369:     const taskRef=await addDoc(collection(db,"tasks"),{title,assignedTo,event,priority,description,dueDate,moaRefId:moaRefId||null,status:"pending",submission:null,createdBy:currentUser.uid,createdAt:serverTimestamp()});
+370:     const member=realtime.members.find(m=>m.id===assignedTo);
+371:     if(member){
+372:       await addDoc(collection(db,"notifications"),{userId:assignedTo,type:"task_assigned",title:"New task assigned",body:`${currentProfile.displayName||currentUser.email} assigned you "${title}"${event?` for ${event}`:""}.`,taskId:taskRef.id,read:false,createdAt:serverTimestamp()});
+373:       await addDoc(collection(db,"mail"),{to:member.email,message:{subject:`TSA Task Assigned: ${title}`,html:`<p>Hello ${esc(member.displayName||"Envoy")},</p><p>You have been assigned a new TSA task: <strong>${esc(title)}</strong>.</p>${event?`<p>Event: ${esc(event)}</p>`:""}<p>${esc(description||"Please open the TSA dashboard for details.")}</p>${dueDate?`<p>Due: ${esc(dueDate)}</p>`:""}<p>Log in to the TSA External Envoys portal to view the task and any reference MOA.</p>`}});
+374:     }
+375:     ["taskTitle","taskEvent","taskDesc","taskDue"].forEach(i=>$(i).value="");$("taskPriority").value="normal";$("taskMoaRef").value="";$("taskMsg").textContent="Task assigned. In-app notification created and email queued.";showToast("Task assigned — notification + email queued.");
+376:   };
+377:   window.approveTask=async id=>{if(currentProfile?.role!=="admin")return;const t=realtime.tasks.find(x=>x.id===id);if(!t)return;await updateDoc(doc(db,"tasks",id),{status:"approved",approvedBy:currentUser.uid,approvedAt:serverTimestamp()});await addDoc(collection(db,"notifications"),{userId:t.assignedTo,type:"task_approved",title:"Task approved",body:`Your task "${t.title}" was approved by the Council.`,read:false,createdAt:serverTimestamp()});showToast("Task approved.");};
+378: 
+379:   // ---------- Applications ----------
+380:   window.renderApplications=()=>{if(currentProfile?.role!=="admin")return;const q=($("applicationSearch")?.value||"").trim().toLowerCase();const list=realtime.applications.filter(a=>!q||(a.name||"").toLowerCase().includes(q)||(a.email||"").toLowerCase().includes(q));$("applicationsList").innerHTML=list.length?list.map(a=>applicationCardHTML(a)).join(""):'<p class="empty-note">No applications yet.</p>';const pending=list.filter(a=>a.status==="pending").length;updateBadge("applicationBadge",pending);};
+381:   function applicationCardHTML(a){return `<div class="application-card"><div class="task-top"><h3>${esc(a.name||a.email)}</h3><span class="status-badge ${a.status==="accepted"?"st-approved":"st-pending"}">${esc(a.status)}</span></div><p><strong>Email:</strong> ${esc(a.email)}</p><p><strong>Year & course:</strong> ${esc(a.course||"—")}</p><p><strong>Why:</strong> ${esc(a.why||"—")}</p>${a.status==="pending"?`<div class="application-actions"><button class="btn btn-gold btn-sm" onclick="acceptApplication('${esc(a.id)}')">Accept & Add to Roster</button><button class="btn btn-ghost btn-sm" onclick="declineApplication('${esc(a.id)}')">Decline</button></div>`:""}</div>`;}
+382:   window.acceptApplication=async id=>{if(currentProfile?.role!=="admin")return;const a=realtime.applications.find(x=>x.id===id);if(!a)return;await setDoc(doc(db,"roster",emailKey(a.email)),{email:a.email,name:a.name||"",role:"member",active:true,course:a.course||"",createdAt:serverTimestamp(),createdBy:currentUser.uid},{merge:true});await updateDoc(doc(db,"applications",id),{status:"accepted",reviewedBy:currentUser.uid,reviewedAt:serverTimestamp()});showToast("Applicant accepted and added to the roster.");};
+383:   window.declineApplication=async id=>{if(currentProfile?.role!=="admin")return;if(confirm("Decline this membership application?")){await updateDoc(doc(db,"applications",id),{status:"declined",reviewedBy:currentUser.uid,reviewedAt:serverTimestamp()});showToast("Application declined.");}};
+384: 
+385:   // ---------- MOA documents ----------
+386:   window.setDocFilter=filter=>{docFilter=filter;document.querySelectorAll("#panel-documents .filter-chip").forEach(x=>x.classList.remove("active"));const id=filter==="all"?"docFilterAll":filter==="reference"?"docFilterReference":"docFilterFinal";$(id)?.classList.add("active");renderDocuments();};
+387:   window.updateMoaFileLabel=()=>{const f=$("moaFile").files[0];$("moaFileLabel").textContent=f?`${f.name} · ${(f.size/1024/1024).toFixed(2)} MB`:"No file selected.";};
+388:   function renderDocuments(){if(!currentProfile)return;const q=($("docSearch")?.value||"").trim().toLowerCase();let list=realtime.documents.filter(d=>(docFilter==="all"||d.type===docFilter)&&(!q||(d.event||"").toLowerCase().includes(q)||(d.title||"").toLowerCase().includes(q)));$("documentsList").innerHTML=list.length?list.map(documentCardHTML).join(""):'<p class="empty-note">No MOAs match your search.</p>';updateBadge("docBadge",realtime.documents.length);populateMoaSelectors();}
+389:   function documentCardHTML(d){const final=d.type==="final";return `<div class="document-card"><div class="document-icon">${final?"📕":"📄"}</div><div><h3>${esc(d.title||d.fileName)}</h3><p><strong>Event:</strong> ${esc(d.event||"Uncategorized")}</p><p>${final?"Final / Approved MOA":"Reference MOA"} · ${esc(d.fileName||"")}</p>${d.notes?`<p>${esc(d.notes)}</p>`:""}</div><div class="doc-actions"><a class="btn btn-ghost btn-sm" href="${esc(d.downloadUrl)}" target="_blank" rel="noopener">View</a><a class="btn btn-gold btn-sm" href="${esc(d.downloadUrl)}" download>Download</a>${currentProfile?.role==="admin"?`<button class="btn btn-ghost btn-sm" onclick="deleteMoa('${esc(d.id)}','${esc(d.storagePath)}')">Delete</button>`:""}</div></div>`;}
+390:   window.uploadMoa=async()=>{
+391:     if(currentProfile?.role!=="admin")return;
+392:     const file=$("moaFile").files[0],event=$("moaEvent").value.trim(),title=$("moaTitle").value.trim(),type=$("moaType").value,notes=$("moaNotes").value.trim();
+393:     if(!file||!event||!title){$("moaMsg").textContent="File, event, and title are required.";return;}
+394:     if(file.size>15*1024*1024){$("moaMsg").textContent="Please keep MOA files under 15 MB.";return;}
+395:     const storagePath=`moas/${type}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g,"_")}`;
+396:     const storageRef=ref(storage,storagePath),uploadTask=uploadBytesResumable(storageRef,file,{contentType:file.type||"application/octet-stream"});
+397:     $("moaMsg").textContent="Uploading…";uploadTask.on("state_changed",snap=>{$("moaProgress").style.width=(snap.bytesTransferred/snap.totalBytes*100)+"%";},err=>{$("moaMsg").textContent=err.message;showToast("Upload failed.","error");},async()=>{const url=await getDownloadURL(uploadTask.snapshot.ref);await addDoc(collection(db,"documents"),{title,event,type,notes,fileName:file.name,storagePath,downloadUrl:url,size:file.size,contentType:file.type||"",uploadedBy:currentUser.uid,createdAt:serverTimestamp()});$("moaFile").value="";$("moaFileLabel").textContent="No file selected.";$("moaEvent").value="";$("moaTitle").value="";$("moaNotes").value="";$("moaProgress").style.width="0";$("moaMsg").textContent="Uploaded.";showToast("MOA added to the library.");});
+398:   };
+399:   window.deleteMoa=async(id,path)=>{
+400:     if(currentProfile?.role!=="admin"||!confirm("Delete this MOA from the library?"))return;
+401:     try{if(path)await deleteObject(ref(storage,path));}catch(e){}
+402:     await deleteDoc(doc(db,"documents",id));showToast("MOA removed.");
+403:   };
+404: 
+405:   // ---------- Notifications ----------
+406:   function updateBadge(id,n){const b=$(id);if(!b)return;b.textContent=n;b.style.display=n?"inline-block":"none";}
+407:   function updateNotifBadge(){const n=realtime.notifications.filter(x=>!x.read).length;updateBadge("notifCount",n);document.querySelector(".notif-btn")?.classList.toggle("has-unread",n>0);}
+408:   function renderNotifications(){const panel=$("notificationPanel");if(!panel)return;const list=realtime.notifications.slice(0,30);panel.innerHTML=`<div class="notification-head"><strong style="color:var(--pro-gold, var(--gold-light));font-family:'Cinzel',serif;">Notifications</strong><button class="btn btn-ghost btn-sm" onclick="markAllNotifications()">Mark all read</button></div>${list.length?list.map(n=>`<div class="notification-item ${n.read?"":"unread"}" onclick="markNotification('${esc(n.id)}')"><strong>${esc(n.title)}</strong><span>${esc(n.body)}</span><time>${n.createdAt?.toDate?n.createdAt.toDate().toLocaleString():"Just now"}</time></div>`).join(""):'<p class="empty-note" style="padding:1rem;">No notifications yet.</p>'}`;updateNotifBadge();}
+409:   window.markNotification=async id=>{await updateDoc(doc(db,"notifications",id),{read:true});renderNotifications();updateNotifBadge();};
+410:   window.markAllNotifications=async()=>{const unread=realtime.notifications.filter(n=>!n.read);await Promise.all(unread.map(n=>updateDoc(doc(db,"notifications",n.id),{read:true})));showToast("Notifications marked as read.");};
+411: 
+412:   // ---------- Applications from landing ----------
+413:   window.handleApply=async e=>{
+414:     e.preventDefault();if(!firebaseConfigured){showToast("Firebase is not configured.","error");return;}
+415:     const application={name:$("applyName").value.trim(),course:$("applyYear").value.trim(),email:$("applyEmail").value.trim().toLowerCase(),why:$("applyWhy").value.trim(),status:"pending",submittedAt:serverTimestamp()};
+416:     const dup=await getDocs(query(collection(db,"applications"),where("email","==",application.email),where("status","==","pending")));
+417:     if(!dup.empty){showToast("An application from this email is already pending.","error");return;}
+418:     await addDoc(collection(db,"applications"),application);
+419:     $("applyFormWrap").style.display="none";$("applyConfirm").style.display="block";showToast("Application submitted.");
+420:   };
+421: 
+422:   // ---------- small helpers ----------
+423:   window.renderAssign=window.renderAssign;
+424:   window.renderApplications=window.renderApplications;
+425:   window.renderMembers=window.renderMembers;
+426:   window.renderPartners=window.renderPartners;
+427:   window.renderDocuments=renderDocuments;
+428:   window.populateMoaSelectors=populateMoaSelectors;
+429: 
+430:   // Topbar gains weight on scroll (both landing + homepage topbars).
+431:   window.addEventListener("scroll",()=>{
+432:     document.querySelectorAll(".topbar").forEach(t=>t.classList.toggle("scrolled",window.scrollY>8));
+433:   },{passive:true});
+434: 
+435:   // Keep the sidebar's sticky offset/height in sync with the topbar's real
+436:   // rendered height (rather than a guessed px value) so it sits flush
+437:   // against the left edge without gaps or overlap at any viewport width.
+438:   (function(){
+439:     function syncTopbarHeight(){
+440:       const tb=document.querySelector("#homepage .topbar");
+441:       if(tb) document.documentElement.style.setProperty("--topbar-h", tb.offsetHeight+"px");
+442:     }
+443:     syncTopbarHeight();
+444:     window.addEventListener("resize", syncTopbarHeight);
+445:     if("ResizeObserver" in window){
+446:       const tb=document.querySelector("#homepage .topbar");
+447:       if(tb) new ResizeObserver(syncTopbarHeight).observe(tb);
+448:     }
+449:   })();
+450: 
+451:   // ID-card "lanyard": a lightweight spring-based swing (idle sway +
+452:   // drag-and-release) standing in for the full three.js/rapier physics
+453:   // Lanyard component, which needs a React/Vite build pipeline and GLB/PNG
+454:   // assets this plain HTML+Firebase app doesn't have.
+455:   (function(){
+456:     const card=document.getElementById("idCard");
+457:     if(!card) return;
+458:     let angle=-4, vel=0, dragging=false, dragStartX=0, dragStartAngle=0, pointerId=null, t=0;
+459:     let reduceMotion=false;
+460:     try{ reduceMotion=!!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches); }catch(e){}
+461: 
+462:     function pointX(e){ return e.touches?e.touches[0].clientX:e.clientX; }
+463:     function onDown(e){
+464:       dragging=true; vel=0; card.classList.add("dragging");
+465:       dragStartX=pointX(e); dragStartAngle=angle;
+466:       if(e.pointerId!==undefined){ pointerId=e.pointerId; try{card.setPointerCapture(pointerId);}catch(_){} }
+467:     }
+468:     function onMove(e){
+469:       if(!dragging) return;
+470:       const dx=pointX(e)-dragStartX;
+471:       const target=Math.max(-45,Math.min(45, dragStartAngle + dx*0.35));
+472:       angle += (target-angle)*0.6;
+473:     }
+474:     function onUp(){ dragging=false; card.classList.remove("dragging"); }
+475: 
+476:     card.addEventListener("pointerdown", onDown);
+477:     window.addEventListener("pointermove", onMove);
+478:     window.addEventListener("pointerup", onUp);
+479:     card.addEventListener("touchstart", onDown, {passive:true});
+480:     window.addEventListener("touchmove", onMove, {passive:true});
+481:     window.addEventListener("touchend", onUp);
+482: 
+483:     function tick(){
+484:       t += 1/60;
+485:       if(!dragging){
+486:         const idleTarget = reduceMotion ? 0 : Math.sin(t*0.7)*4.5;
+487:         const springK=0.045, damping=0.86;
+488:         vel += (idleTarget-angle)*springK;
+489:         vel *= damping;
+490:         angle += vel;
+491:       }
+492:       card.style.transform="rotate("+angle.toFixed(2)+"deg)";
+493:       requestAnimationFrame(tick);
+494:     }
+495:     requestAnimationFrame(tick);
+496:   })();
+497: 
+498:   // Scroll-reveal: fade each section in once, the first time it enters
+499:   // view, and never hide it again. (Previously this recomputed opacity
+500:   // from scroll position every frame, which could get stuck at 0 depending
+501:   // on scroll speed/timing — this version is simpler and can't get stuck.)
+502:   const revealTargets=[...document.querySelectorAll("[data-reveal]")];
+503:   if("IntersectionObserver" in window && revealTargets.length){
+504:     const io=new IntersectionObserver(entries=>{
+505:       entries.forEach(entry=>{
+506:         if(entry.isIntersecting){ entry.target.classList.add("reveal-visible"); io.unobserve(entry.target); }
+507:       });
+508:     },{threshold:0.12, rootMargin:"0px 0px -6% 0px"});
+509:     revealTargets.forEach(el=>io.observe(el));
+510:     // Safety net: if anything is somehow never flagged as intersecting
+511:     // (e.g. it's already fully on-screen at load in an odd viewport),
+512:     // reveal it anyway after a moment so text is never left invisible.
+513:     setTimeout(()=>revealTargets.forEach(el=>el.classList.add("reveal-visible")),1200);
+514:   } else {
+515:     revealTargets.forEach(el=>el.classList.add("reveal-visible"));
+516:   }
+517: 
+518:   // ============================================================
+519:   // LIVE INTERACTIVE "ROLE OF TSA" CODEX & ANIMATIONS
+520:   // ============================================================
+521:   const rolePillars = {
+522:     outreach: {
+523:       title: "Diplomatic Outreach & Letters",
+524:       badge: "Pillar 1 · Institutional Liaison",
+525:       desc: "Drafting, formatting, and hand-delivering official liaison letters, invitations, and sponsorship requests to partner colleges, executive offices, and industry directors on behalf of TechSystems Association.",
+526:       deliverables: [
+527:         "Official university invitations & endorsement requests",
+528:         "Executive outreach letters hand-delivered across Albay & Bicol",
+529:         "Prompt communication tracking & diplomatic follow-ups"
+530:       ],
+531:       target: "Higher Education Institutions, Corporate Partners, LGUs",
+532:       simFocus: "Official Inter-Campus Liaison Letter"
+533:     },
+534:     delegations: {
+535:       title: "Campus Delegations & Representation",
+536:       badge: "Pillar 2 · On-Site Presence",
+537:       desc: "Serving as official student ambassadors representing Bicol University Polangui at regional tech conferences, inter-school assemblies, and corporate innovation seminars with professional poise.",
+538:       deliverables: [
+539:         "In-person institutional visits to executive offices",
+540:         "Official delegation seating at regional student tech assemblies",
+541:         "Briefing council leadership on partner institutional capabilities"
+542:       ],
+543:       target: "Sister BU Campuses, Regional IT Councils, Tech Summits",
+544:       simFocus: "Regional Tech Congress Delegation"
+545:     },
+546:     moa: {
+547:       title: "MOA Governance & Legal Partnerships",
+548:       badge: "Pillar 3 · Institutional Contracts",
+549:       desc: "Structuring and executing formal Memoranda of Agreement (MOA). Envoys ensure all partnership terms protect student welfare, provide real value, and are securely archived in the TSA digital library.",
+550:       deliverables: [
+551:         "MOA template drafting according to university legal standards",
+552:         "Reviewing bilateral commitments & student welfare safeguards",
+553:         "Digital library archival and reference document tracking"
+554:       ],
+555:       target: "Industry Internship Hosts, Tech Sponsors, Innovation Labs",
+556:       simFocus: "Bilateral MOA Ratification"
+557:     },
+558:     alliances: {
+559:       title: "Guild Alliances & Collaborative Summits",
+560:       badge: "Pillar 4 · Inter-Org Synergy",
+561:       desc: "Co-organizing multi-university hackathons, joint tech workshops, and student developer exchanges that unite student councils and technology organizations under one collaborative ecosystem.",
+562:       deliverables: [
+563:         "Co-hosting inter-school seminars and developer masterclasses",
+564:         "Cross-promotional outreach for regional student hackathons",
+565:         "Sharing technological resources and organizational playbooks"
+566:       ],
+567:       target: "Allied Student Guilds, Provincial Developer Communities",
+568:       simFocus: "Cross-Guild Regional Hackathon MOA"
+569:     }
+570:   };
+571: 
+572:   let activePillarKey = "outreach";
+573: 
+574:   window.selectRolePillar = function(key) {
+575:     if(!rolePillars[key]) return;
+576:     activePillarKey = key;
+577:     document.querySelectorAll(".role-tab").forEach(btn => {
+578:       btn.classList.toggle("active", btn.dataset.pillar === key);
+579:     });
+580: 
+581:     const data = rolePillars[key];
+582:     const stage = document.getElementById("roleShowcaseStage");
+583:     if(!stage) return;
+584: 
+585:     stage.style.opacity = "0";
+586:     stage.style.transform = "translateY(8px)";
+587: 
+588:     setTimeout(() => {
+589:       stage.innerHTML = `
+590:         <div class="stage-left">
+591:           <span class="stage-badge">${esc(data.badge)}</span>
+592:           <h3>${esc(data.title)}</h3>
+593:           <p>${esc(data.desc)}</p>
+594:           <div class="stage-target-row">
+595:             <span class="stage-target-label">Target Entities:</span>
+596:             ${data.target.split(",").map(t => `<span class="target-tag">${esc(t.trim())}</span>`).join("")}
+597:           </div>
+598:         </div>
+599:         <div class="stage-right">
+600:           <h4><span style="color:var(--gold);">✦</span> Core Envoy Deliverables</h4>
+601:           <ul class="deliverables-list">
+602:             ${data.deliverables.map(d => `<li><span class="check-icon">✓</span><span>${esc(d)}</span></li>`).join("")}
+603:           </ul>
+604:           <button class="btn btn-gold stage-cta-btn" onclick="testWorkflowFromPillar('${esc(key)}')">
+605:             <span>⚡ Test This Mission Workflow</span>
+606:           </button>
+607:         </div>
+608:       `;
+609:       stage.style.opacity = "1";
+610:       stage.style.transform = "translateY(0)";
+611:     }, 180);
+612: 
+613:     const focusEl = document.getElementById("simMissionFocus");
+614:     if(focusEl) focusEl.textContent = data.simFocus;
+615:   };
+616: 
+617:   window.testWorkflowFromPillar = function(key) {
+618:     const data = rolePillars[key];
+619:     if(data){
+620:       const focusEl = document.getElementById("simMissionFocus");
+621:       if(focusEl) focusEl.textContent = data.simFocus;
+622:     }
+623:     const simCard = document.querySelector(".simulator-card");
+624:     if(simCard){
+625:       simCard.scrollIntoView({behavior:"smooth", block:"center"});
+626:       setTimeout(() => window.runMissionSimulation(), 500);
+627:     }
+628:   };
+629: 
+630:   // Live Mission Simulator
+631:   let simRunning = false;
+632:   window.runMissionSimulation = function() {
+633:     if(simRunning) return;
+634:     simRunning = true;
+635: 
+636:     const btn = document.getElementById("simLaunchBtn");
+637:     const bar = document.getElementById("simProgressBar");
+638:     const phaseLabel = document.getElementById("simPhaseLabel");
+639:     const feedback = document.getElementById("simFeedback");
+640:     const steps = [
+641:       document.getElementById("simStep1"),
+642:       document.getElementById("simStep2"),
+643:       document.getElementById("simStep3"),
+644:       document.getElementById("simStep4")
+645:     ];
+646: 
+647:     if(btn) { btn.disabled = true; btn.textContent = "Running Mission Simulation…"; }
+648:     steps.forEach(s => s && s.classList.remove("active", "completed"));
+649:     if(bar) bar.style.width = "0%";
+650: 
+651:     const timeline = [
+652:       { progress: "25%", step: 0, phase: "Phase 1: Formulating Liaison Letter & MOA Draft", feed: "Drafting formal invitation with verified legal terms..." },
+653:       { progress: "50%", step: 1, phase: "Phase 2: Council Admin & Dean Endorsement", feed: "Adviser signature and council endorsement sealed..." },
+654:       { progress: "75%", step: 2, phase: "Phase 3: Hand-Delivering to Partner Executive Office", feed: "Diplomatic envoy delegation arrived at partner campus..." },
+655:       { progress: "100%", step: 3, phase: "Phase 4: Bilateral Ratification Completed!", feed: "Alliance sealed! MOA added to the External Affairs Library." }
+656:     ];
+657: 
+658:     timeline.forEach((item, index) => {
+659:       setTimeout(() => {
+660:         if(bar) bar.style.width = item.progress;
+661:         if(phaseLabel) phaseLabel.textContent = item.phase;
+662:         if(feedback) feedback.textContent = item.feed;
+663: 
+664:         steps.forEach((s, idx) => {
+665:           if(!s) return;
+666:           if(idx < item.step) { s.classList.remove("active"); s.classList.add("completed"); }
+667:           else if(idx === item.step) { s.classList.add("active"); s.classList.remove("completed"); }
+668:           else { s.classList.remove("active", "completed"); }
+669:         });
+670: 
+671:         if(index === timeline.length - 1) {
+672:           steps[item.step]?.classList.add("completed");
+673:           if(btn) {
+674:             btn.classList.add("stamped");
+675:             setTimeout(() => btn.classList.remove("stamped"), 600);
+676:             btn.disabled = false;
+677:             btn.innerHTML = "<span>✓ Mission Complete! Replay Simulation</span>";
+678:           }
+679:           simRunning = false;
+680:           showToast("Alliance ratified! Mission simulated successfully.");
+681:         }
+682:       }, (index + 1) * 850);
+683:     });
+684:   };
+685: 
+686:   // Envoy Aptitude Matcher
+687:   const aptitudeMatches = {
+688:     speaking: {
+689:       role: "Campus Delegation & Public Liaison Lead",
+690:       desc: "You excel at face-to-face representation, addressing student assemblies, and presenting TSA initiatives to executive boards.",
+691:       impact: "High visibility, direct networking with university leadership"
+692:     },
+693:     drafting: {
+694:       role: "MOA Governance & Legal Correspondence Specialist",
+695:       desc: "You have sharp precision in technical writing, crafting ironclad bilateral terms, and maintaining official student association archives.",
+696:       impact: "Creates lasting institutional agreements and student benefits"
+697:     },
+698:     networking: {
+699:       role: "Corporate Linkage & Tech Industry Ambassador",
+700:       desc: "You love connecting talent with opportunity — building relationships with software companies, startup founders, and sponsors.",
+701:       impact: "Direct access to internships, sponsorships, and tech workshops"
+702:     },
+703:     events: {
+704:       role: "Guild Alliance & Regional Summit Coordinator",
+705:       desc: "You thrive on large-scale collaborations, coordinating multi-school summits, hackathon itineraries, and delegate logistics.",
+706:       impact: "Unites student developers across provincial and national scenes"
+707:     }
+708:   };
+709: 
+710:   window.matchEnvoySkill = function(skillKey) {
+711:     document.querySelectorAll(".apt-chip").forEach(c => {
+712:       c.classList.toggle("active", c.dataset.skill === skillKey);
+713:     });
+714: 
+715:     const data = aptitudeMatches[skillKey] || aptitudeMatches.speaking;
+716:     const resEl = document.getElementById("aptitudeResult");
+717:     if(!resEl) return;
+718: 
+719:     resEl.innerHTML = `
+720:       <div class="apt-res-info">
+721:         <span class="eyebrow" style="color:var(--gold);">Matched Calling:</span>
+722:         <h4>${esc(data.role)}</h4>
+723:         <p>${esc(data.desc)}</p>
+724:         <span style="display:block;margin-top:0.35rem;font-size:0.8rem;color:var(--text-muted);font-style:italic;">Strategic Impact: ${esc(data.impact)}</span>
+725:       </div>
+726:       <button class="btn btn-gold btn-sm" onclick="openModal('apply')">
+727:         Apply for this Role →
+728:       </button>
+729:     `;
+730:   };
+731: 
+732:   // Scroll-triggered Animated Number Counters
+733:   function animateMetrics() {
+734:     const vals = document.querySelectorAll(".metric-val");
+735:     vals.forEach(val => {
+736:       const target = parseInt(val.dataset.target, 10) || 0;
+737:       let start = 0;
+738:       const duration = 1800;
+739:       const startTime = performance.now();
+740: 
+741:       function update(currentTime) {
+742:         const elapsed = currentTime - startTime;
+743:         const progress = Math.min(elapsed / duration, 1);
+744:         // easeOutExpo
+745:         const ease = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+746:         const current = Math.floor(ease * target);
+747:         val.textContent = current.toLocaleString();
+748: 
+749:         if(progress < 1) {
+750:           requestAnimationFrame(update);
+751:         } else {
+752:           val.textContent = target.toLocaleString();
+753:         }
+754:       }
+755:       requestAnimationFrame(update);
+756:     });
+757:   }
+758: 
+759:   // Observe metrics strip to trigger count-up
+760:   const metricsStrip = document.querySelector(".metrics-strip");
+761:   if(metricsStrip && "IntersectionObserver" in window) {
+762:     let triggered = false;
+763:     const observer = new IntersectionObserver((entries) => {
+764:       if(entries[0].isIntersecting && !triggered) {
+765:         triggered = true;
+766:         animateMetrics();
+767:         observer.unobserve(metricsStrip);
+768:       }
+769:     }, { threshold: 0.25 });
+770:     observer.observe(metricsStrip);
+771:   }
+772: 
+773:   // 3D Card Perspective Tilt Effect on mouse movement
+774:   (function init3DTilt() {
+775:     const tiltCards = document.querySelectorAll(".role-showcase-stage, .simulator-card, .aptitude-box");
+776:     tiltCards.forEach(card => {
+777:       card.addEventListener("mousemove", e => {
+778:         const rect = card.getBoundingClientRect();
+779:         const x = e.clientX - rect.left;
+780:         const y = e.clientY - rect.top;
+781:         const cx = rect.width / 2;
+782:         const cy = rect.height / 2;
+783:         const rotX = ((y - cy) / cy) * -3.5;
+784:         const rotY = ((x - cx) / cx) * 3.5;
+785:         card.style.transform = `perspective(1000px) rotateX(${rotX.toFixed(2)}deg) rotateY(${rotY.toFixed(2)}deg)`;
+786:       });
+787:       card.addEventListener("mouseleave", () => {
+788:         card.style.transform = "perspective(1000px) rotateX(0deg) rotateY(0deg)";
+789:       });
+790:     });
+791:   })();
+792: 
+793:   // Initialize defaults on DOM load
+794:   window.addEventListener("DOMContentLoaded", () => {
+795:     window.selectRolePillar("outreach");
+796:     window.matchEnvoySkill("speaking");
+797:   });
+798:   // Also run immediately in case DOM is already ready
+799:   if(document.readyState !== "loading") {
+800:     window.selectRolePillar("outreach");
+801:     window.matchEnvoySkill("speaking");
+802:   }
+803: 
+804:   // ============================================================
+805:   // ROBUST ROSTER LOOKUP (Handles direct, sanitized, and queries)
+806:   // ============================================================
+807:   async function rosterByEmail(email){
+808:     if(!email) return null;
+809:     const normalized = email.trim().toLowerCase();
+810:     try {
+811:       // 1. Direct document lookup
+812:       let direct = await getDoc(doc(db, "roster", normalized));
+813:       if(direct.exists()) return { id: direct.id, ...direct.data() };
+814: 
+815:       // 2. Sanitized document lookup (used by admin seed script)
+816:       const sanitized = normalized.replace(/[^a-z0-9]/g, "_");
+817:       direct = await getDoc(doc(db, "roster", sanitized));
+818:       if(direct.exists()) return { id: direct.id, ...direct.data() };
+819: 
+820:       // 3. Query by email field
+821:       const q = query(collection(db, "roster"), where("email", "==", normalized));
+822:       const snap = await getDocs(q);
+823:       if(!snap.empty) return { id: snap.docs[0].id, ...snap.docs[0].data() };
+824:     } catch(err) {
+825:       console.warn("rosterByEmail error:", err);
+826:     }
+827:     return null;
+828:   }
+829: 
+830:   // Friendly Auth Errors including unauthorized-domain guide
+831:   function friendlyAuthError(e){
+832:     const c = e?.code || "";
+833:     const map = {
+834:       "auth/invalid-credential":"Email or password is incorrect.",
+835:       "auth/user-not-found":"No Firebase account exists for that email yet.",
+836:       "auth/wrong-password":"Email or password is incorrect.",
+837:       "auth/email-already-in-use":"That email already has a Firebase account. Try logging in.",
+838:       "auth/weak-password":"Use a stronger password with at least 6 characters.",
+839:       "auth/popup-closed-by-user":"Google sign-in was cancelled.",
+840:       "auth/popup-blocked":"Your browser blocked the Google sign-in popup. Allow popups and try again.",
+841:       "auth/too-many-requests":"Too many attempts. Please wait a moment and try again.",
+842:       "auth/network-request-failed":"Network error. Check your internet connection.",
+843:       "auth/unauthorized-domain":"This domain or file:/// origin is not authorized in Firebase Auth. Please access via the live deployed site at https://tsa-external-envoys.web.app or on http://localhost:5000."
+844:     };
+845:     return map[c] || e?.message || "Authentication failed.";
+846:   }
+847: 
+848:   // ============================================================
+849:   // ROLE OF TSA CODEX & LIVE MISSION SIMULATOR
+850:   // ============================================================
+851:   const rolePillars = {
+852:     outreach: {
+853:       title: "Diplomatic Outreach & Letters",
+854:       badge: "Responsibility 1 · Institutional Liaison",
+855:       desc: "Drafting, formatting, and hand-delivering official liaison letters, invitations, and sponsorship requests to partner colleges, executive offices, and industry directors on behalf of TechSystems Association.",
+856:       deliverables: [
+857:         "Official university invitations & endorsement requests",
+858:         "Executive outreach letters hand-delivered across Albay & Bicol",
+859:         "Prompt communication tracking & diplomatic follow-ups"
+860:       ],
+861:       target: "Higher Education Institutions, Corporate Partners, LGUs",
+862:       simFocus: "Official Inter-Campus Liaison Letter"
+863:     },
+864:     delegations: {
+865:       title: "Campus Delegations & Representation",
+866:       badge: "Responsibility 2 · On-Site Presence",
+867:       desc: "Serving as official student ambassadors representing Bicol University Polangui at regional tech conferences, inter-school assemblies, and corporate innovation seminars with professional poise.",
+868:       deliverables: [
+869:         "In-person institutional visits to executive offices",
+870:         "Official delegation seating at regional student tech assemblies",
+871:         "Briefing council leadership on partner institutional capabilities"
+872:       ],
+873:       target: "Sister BU Campuses, Regional IT Councils, Tech Summits",
+874:       simFocus: "Regional Tech Congress Delegation"
+875:     },
+876:     moa: {
+877:       title: "MOA Governance & Legal Partnerships",
+878:       badge: "Responsibility 3 · Institutional Contracts",
+879:       desc: "Structuring and executing formal Memoranda of Agreement (MOA). Envoys ensure all partnership terms protect student welfare, provide real value, and are securely archived in the TSA digital library.",
+880:       deliverables: [
+881:         "MOA template drafting according to university legal standards",
+882:         "Reviewing bilateral commitments & student welfare safeguards",
+883:         "Digital library archival and reference document tracking"
+884:       ],
+885:       target: "Industry Internship Hosts, Tech Sponsors, Innovation Labs",
+886:       simFocus: "Bilateral MOA Ratification"
+887:     },
+888:     alliances: {
+889:       title: "Guild Alliances & Collaborative Summits",
+890:       badge: "Responsibility 4 · Inter-Org Synergy",
+891:       desc: "Co-organizing multi-university hackathons, joint tech workshops, and student developer exchanges that unite student councils and technology organizations under one collaborative ecosystem.",
+892:       deliverables: [
+893:         "Co-hosting inter-school seminars and developer masterclasses",
+894:         "Cross-promotional outreach for regional student hackathons",
+895:         "Sharing technological resources and organizational playbooks"
+896:       ],
+897:       target: "Allied Student Guilds, Provincial Developer Communities",
+898:       simFocus: "Cross-Guild Regional Hackathon MOA"
+899:     }
+900:   };
+901: 
+902:   let activePillarKey = "outreach";
+903: 
+904:   window.selectRolePillar = function(key) {
+905:     if(!rolePillars[key]) return;
+906:     activePillarKey = key;
+907:     document.querySelectorAll(".role-tab").forEach(btn => {
+908:       btn.classList.toggle("active", btn.dataset.pillar === key);
+909:     });
+910: 
+911:     const data = rolePillars[key];
+912:     const stage = document.getElementById("roleShowcaseStage");
+913:     if(!stage) return;
+914: 
+915:     stage.style.opacity = "0";
+916:     stage.style.transform = "translateY(6px)";
+917: 
+918:     setTimeout(() => {
+919:       stage.innerHTML = `
+920:         <div class="stage-left">
+921:           <span class="stage-badge">${esc(data.badge)}</span>
+922:           <h3>${esc(data.title)}</h3>
+923:           <p>${esc(data.desc)}</p>
+924:           <div class="stage-target-row">
+925:             <span class="stage-target-label">Target Entities:</span>
+926:             ${data.target.split(",").map(t => `<span class="target-tag">${esc(t.trim())}</span>`).join("")}
+927:           </div>
+928:         </div>
+929:         <div class="stage-right">
+930:           <h4><span style="color:var(--gold);">✦</span> Core Envoy Deliverables</h4>
+931:           <ul class="deliverables-list">
+932:             ${data.deliverables.map(d => `<li><span class="check-icon">✓</span><span>${esc(d)}</span></li>`).join("")}
+933:           </ul>
+934:           <button class="btn btn-gold stage-cta-btn" onclick="testWorkflowFromPillar('${esc(key)}')">
+935:             <span>⚡ Test This Mission Workflow</span>
+936:           </button>
+937:         </div>
+938:       `;
+939:       stage.style.opacity = "1";
+940:       stage.style.transform = "translateY(0)";
+941:     }, 120);
+942: 
+943:     const focusEl = document.getElementById("simMissionFocus");
+944:     if(focusEl) focusEl.textContent = data.simFocus;
+945:   };
+946: 
+947:   window.testWorkflowFromPillar = function(key) {
+948:     const data = rolePillars[key];
+949:     if(data){
+950:       const focusEl = document.getElementById("simMissionFocus");
+951:       if(focusEl) focusEl.textContent = data.simFocus;
+952:     }
+953:     const simCard = document.querySelector(".simulator-card");
+954:     if(simCard){
+955:       simCard.scrollIntoView({behavior:"smooth", block:"center"});
+956:       setTimeout(() => window.runMissionSimulation(), 450);
+957:     }
+958:   };
+959: 
+960:   // Live Mission Simulator
+961:   let simRunning = false;
+962:   window.runMissionSimulation = function() {
+963:     if(simRunning) return;
+964:     simRunning = true;
+965: 
+966:     const btn = document.getElementById("simLaunchBtn");
+967:     const bar = document.getElementById("simProgressBar");
+968:     const phaseLabel = document.getElementById("simPhaseLabel");
+969:     const feedback = document.getElementById("simFeedback");
+970:     const steps = [
+971:       document.getElementById("simStep1"),
+972:       document.getElementById("simStep2"),
+973:       document.getElementById("simStep3"),
+974:       document.getElementById("simStep4")
+975:     ];
+976: 
+977:     if(btn) { btn.disabled = true; btn.textContent = "Running Mission Simulation…"; }
+978:     steps.forEach(s => s && s.classList.remove("active", "completed"));
+979:     if(bar) bar.style.width = "0%";
+980: 
+981:     const timeline = [
+982:       { progress: "25%", step: 0, phase: "Phase 1: Formulating Liaison Letter & MOA Draft", feed: "Drafting formal invitation with verified legal terms..." },
+983:       { progress: "50%", step: 1, phase: "Phase 2: Council Admin & Dean Endorsement", feed: "Adviser signature and council endorsement sealed..." },
+984:       { progress: "75%", step: 2, phase: "Phase 3: Hand-Delivering to Partner Executive Office", feed: "Diplomatic envoy delegation arrived at partner campus..." },
+985:       { progress: "100%", step: 3, phase: "Phase 4: Bilateral Ratification Completed!", feed: "Alliance sealed! MOA added to the External Affairs Library." }
+986:     ];
+987: 
+988:     timeline.forEach((item, index) => {
+989:       setTimeout(() => {
+990:         if(bar) bar.style.width = item.progress;
+991:         if(phaseLabel) phaseLabel.textContent = item.phase;
+992:         if(feedback) feedback.textContent = item.feed;
+993: 
+994:         steps.forEach((s, idx) => {
+995:           if(!s) return;
+996:           if(idx < item.step) { s.classList.remove("active"); s.classList.add("completed"); }
+997:           else if(idx === item.step) { s.classList.add("active"); s.classList.remove("completed"); }
+998:           else { s.classList.remove("active", "completed"); }
+999:         });
+1000: 
+1001:         if(index === timeline.length - 1) {
+1002:           steps[item.step]?.classList.add("completed");
+1003:           if(btn) {
+1004:             btn.classList.add("stamped");
+1005:             setTimeout(() => btn.classList.remove("stamped"), 600);
+1006:             btn.disabled = false;
+1007:             btn.innerHTML = "<span>✓ Mission Complete! Replay Simulation</span>";
+1008:           }
+1009:           simRunning = false;
+1010:           showToast("Alliance ratified! Mission simulated successfully.");
+1011:         }
+1012:       }, (index + 1) * 750);
+1013:     });
+1014:   };
+1015: 
+1016:   // ============================================================
+1017:   // SEPARATED REAL-TIME TASK STREAMS (MY TASKS vs ALL TASKS)
+1018:   // ============================================================
+1019:   function startRealtime(){
+1020:     clearListeners();
+1021:     const uid = currentUser.uid;
+1022:     // 1. Logged-in user's tasks
+1023:     listenCollection("myTasks", "myTasks", query(collection(db, "tasks"), where("assignedTo", "==", uid)));
+1024:     // 2. Partners
+1025:     listenCollection("partners", "partners", query(collection(db, "partners"), orderBy("name")));
+1026:     // 3. MOA documents
+1027:     listenCollection("documents", "documents", query(collection(db, "documents"), orderBy("createdAt", "desc")));
+1028:     // 4. In-app notifications
+1029:     listenCollection("notifications", "notifications", query(collection(db, "notifications"), where("userId", "==", uid), orderBy("createdAt", "desc")));
+1030: 
+1031:     if(currentProfile.role === "admin"){
+1032:       // 5. Member list from users collection
+1033:       listenCollection("members", "members", query(collection(db, "users"), orderBy("email")));
+1034:       // 6. ALL tasks across the committee for admin management
+1035:       listenCollection("allTasks", "allTasks", query(collection(db, "tasks"), orderBy("createdAt", "desc")));
+1036:       // 7. Applications
+1037:       listenCollection("applications", "applications", query(collection(db, "applications"), orderBy("submittedAt", "desc")));
+1038:     }
+1039:   }
+1040: 
+1041:   function refreshUI(target){
+1042:     if(!currentProfile) return;
+1043:     if(target === "myTasks" || target === "tasks") renderTasks();
+1044:     if(target === "allTasks" && currentProfile.role === "admin") renderAssign();
+1045:     if(target === "partners") renderPartners();
+1046:     if(target === "applications" && currentProfile.role === "admin") renderApplications();
+1047:     if(target === "documents") { renderDocuments(); populateMoaSelectors(); }
+1048:     if(target === "notifications") { renderNotifications(); updateNotifBadge(); }
+1049:     if(target === "members" && currentProfile.role === "admin") { renderMembers(); renderAssign(); }
+1050:   }
+1051: 
+1052:   // Render My Tasks (Member View)
+1053:   async function renderTasks(){
+1054:     if(!currentProfile) return;
+1055:     const mine = (realtime.myTasks || []).filter(t => t.assignedTo === currentUser.uid);
+1056:     const wrap = $("tasksList");
+1057:     if(!mine.length) {
+1058:       wrap.innerHTML = '<p class="empty-note">No quests assigned to you yet. Check back soon.</p>';
+1059:     } else {
+1060:       wrap.innerHTML = mine.map(taskCardHTML).join("");
+1061:     }
+1062:     const pending = mine.filter(t => t.status === "pending").length;
+1063:     const submitted = mine.filter(t => t.status !== "pending").length;
+1064:     animateNumber($("overviewPending"), pending);
+1065:     animateNumber($("overviewSubmitted"), submitted);
+1066:     animateNumber($("overviewPartners"), (realtime.partners || []).length);
+1067:     const badge = $("taskBadge");
+1068:     if(badge) {
+1069:       badge.style.display = pending ? "inline-block" : "none";
+1070:       badge.textContent = pending;
+1071:     }
+1072:   }
+1073: 
+1074:   // Admin Assign Tasks View
+1075:   window.renderAssign = () => {
+1076:     if(currentProfile?.role !== "admin") return;
+1077:     const active = (realtime.members || []).filter(m => m.active !== false);
+1078:     const assigneeSelect = $("taskAssignee");
+1079:     if(assigneeSelect) {
+1080:       assigneeSelect.innerHTML = active.map(m => `<option value="${esc(m.id)}">${esc(m.displayName || m.email)} (${esc(m.email)})</option>`).join("");
+1081:     }
+1082:     populateMoaSelectors();
+1083:     const tasks = realtime.allTasks || [];
+1084:     const wrap = $("allTasksList");
+1085:     if(wrap) {
+1086:       wrap.innerHTML = tasks.length ? tasks.map(adminTaskHTML).join("") : '<p class="empty-note">No tasks assigned yet.</p>';
+1087:     }
+1088:     const awaiting = tasks.filter(t => t.status === "submitted").length;
+1089:     updateBadge("assignBadge", awaiting);
+1090:   };
+1091: 
+1092:   function adminTaskHTML(t){
+1093:     const member = (realtime.members || []).find(m => m.id === t.assignedTo);
+1094:     const assigneeName = member?.displayName || t.assignedToName || t.assignedToEmail || "Envoy";
+1095:     const assigneeEmail = member?.email || t.assignedToEmail || "";
+1096:     return `<div class="task-card priority-${esc(t.priority || "normal")}">
+1097:       <div class="task-top">
+1098:         <h3>${esc(t.title)}</h3>
+1099:         <span class="status-badge ${t.status === "approved" ? "st-approved" : t.status === "submitted" ? "st-submitted" : "st-pending"}">${esc(t.status || "pending")}</span>
+1100:       </div>
+1101:       <div class="task-meta">
+1102:         ${t.event ? `<span class="meta-chip">🎪 ${esc(t.event)}</span>` : ""}
+1103:         <span class="meta-chip">Assigned To: ${esc(assigneeName)}</span>
+1104:         ${t.dueDate ? `<span class="meta-chip">Due: ${esc(t.dueDate)}</span>` : ""}
+1105:       </div>
+1106:       <p>${esc(t.description || "No description provided.")}</p>
+1107:       ${t.moaRefId ? (() => {
+1108:         const d = (realtime.documents || []).find(x => x.id === t.moaRefId);
+1109:         return d ? `<p><a href="${esc(d.downloadUrl)}" target="_blank" rel="noopener" class="btn btn-ghost btn-sm">📎 Attached MOA: ${esc(d.title)}</a></p>` : "";
+1110:       })() : ""}
+1111:       <div class="task-actions" style="margin-top:0.8rem;display:flex;gap:0.5rem;flex-wrap:wrap;">
+1112:         ${assigneeEmail ? `<a class="btn btn-ghost btn-sm" href="mailto:${encodeURIComponent(assigneeEmail)}?subject=${encodeURIComponent('[TSA Task] ' + t.title)}&body=${encodeURIComponent('Hello ' + assigneeName + ',\n\nYou have been assigned the following task for the External Affairs Committee:\n\nTask: ' + t.title + '\nDetails: ' + (t.description || 'See TSA Portal') + '\nDue Date: ' + (t.dueDate || 'N/A') + '\n\nPlease access the portal to view attached documents: https://tsa-external-envoys.web.app')}" target="_blank" rel="noopener">✉️ Email Member Directly</a>` : ""}
+1113:         ${t.status === "submitted" ? `<button class="btn btn-gold btn-sm" onclick="approveTask('${esc(t.id)}')">✓ Approve Submission</button>` : ""}
+1114:       </div>
+1115:       ${t.status === "submitted" ? `<div class="inline-form" style="margin-top:0.8rem;"><strong>Member Submission:</strong><p>${esc(t.submission?.text || "")}</p>${t.submission?.link ? `<a href="${esc(t.submission.link)}" target="_blank" rel="noopener" style="color:var(--sapphire);text-decoration:underline;">${esc(t.submission.link)}</a>` : ""}</div>` : ""}
+1116:     </div>`;
+1117:   }
+1118: 
+1119:   // Create Task with In-App Notification + Mail Queue + Direct Email Action
+1120:   window.createTask = async () => {
+1121:     if(currentProfile?.role !== "admin") return;
+1122:     const title = $("taskTitle").value.trim();
+1123:     const assignedTo = $("taskAssignee").value;
+1124:     const event = $("taskEvent").value.trim();
+1125:     const priority = $("taskPriority").value;
+1126:     const description = $("taskDesc").value.trim();
+1127:     const dueDate = $("taskDue").value;
+1128:     const moaRefId = $("taskMoaRef").value;
+1129: 
+1130:     if(!title || !assignedTo){
+1131:       $("taskMsg").textContent = "Task title and assignee are required.";
+1132:       return;
+1133:     }
+1134: 
+1135:     const member = (realtime.members || []).find(m => m.id === assignedTo);
+1136:     const memberEmail = member?.email || "";
+1137:     const memberName = member?.displayName || memberEmail || "Envoy";
+1138: 
+1139:     try {
+1140:       // 1. Write Task to Firestore
+1141:       const taskRef = await addDoc(collection(db, "tasks"), {
+1142:         title,
+1143:         assignedTo,
+1144:         assignedToEmail: memberEmail,
+1145:         assignedToName: memberName,
+1146:         event,
+1147:         priority,
+1148:         description,
+1149:         dueDate,
+1150:         moaRefId: moaRefId || null,
+1151:         status: "pending",
+1152:         submission: null,
+1153:         createdBy: currentUser.uid,
+1154:         createdByName: currentProfile.displayName || currentUser.email,
+1155:         createdAt: serverTimestamp()
+1156:       });
+1157: 
+1158:       // 2. Real-time In-App Notification
+1159:       await addDoc(collection(db, "notifications"), {
+1160:         userId: assignedTo,
+1161:         type: "task_assigned",
+1162:         title: "New External Affairs Task Assigned",
+1163:         body: `${currentProfile.displayName || "Council Admin"} assigned you "${title}"${event ? ` for ${event}` : ""}.`,
+1164:         taskId: taskRef.id,
+1165:         read: false,
+1166:         createdAt: serverTimestamp()
+1167:       });
+1168: 
+1169:       // 3. Queue in Mail collection
+1170:       if(memberEmail) {
+1171:         await addDoc(collection(db, "mail"), {
+1172:           to: memberEmail,
+1173:           message: {
+1174:             subject: `[TSA External Affairs] Task Assigned: ${title}`,
+1175:             html: `<p>Hello ${esc(memberName)},</p>
+1176: <p>You have been assigned a task for the <strong>External Affairs Committee</strong>:</p>
+1177: <h3>${esc(title)}</h3>
+1178: ${event ? `<p><strong>Event:</strong> ${esc(event)}</p>` : ""}
+1179: ${dueDate ? `<p><strong>Due Date:</strong> ${esc(dueDate)}</p>` : ""}
+1180: <p>${esc(description || "Please log in to the portal for full details.")}</p>
+1181: <hr>
+1182: <p><a href="https://tsa-external-envoys.web.app">Open TSA External Envoys Portal</a></p>`
+1183:           }
+1184:         });
+1185:       }
+1186: 
+1187:       // 4. Form Reset and Success Feedback
+1188:       ["taskTitle", "taskEvent", "taskDesc", "taskDue"].forEach(i => $(i).value = "");
+1189:       $("taskPriority").value = "normal";
+1190:       $("taskMoaRef").value = "";
+1191: 
+1192:       // Provide direct mailto link for immediate personal dispatch
+1193:       const mailtoUrl = `mailto:${encodeURIComponent(memberEmail)}?subject=${encodeURIComponent('[TSA Task] ' + title)}&body=${encodeURIComponent('Hello ' + memberName + ',\n\nYou have been assigned the following task for the External Affairs Committee:\n\nTask: ' + title + '\nDetails: ' + (description || 'See portal') + '\nDue Date: ' + (dueDate || 'N/A') + '\n\nAccess the portal: https://tsa-external-envoys.web.app')}`;
+1194: 
+1195:       $("taskMsg").innerHTML = `Task assigned! Reflected in member dashboard. <a href="${mailtoUrl}" target="_blank" rel="noopener" class="btn btn-gold btn-sm" style="margin-left:0.5rem;display:inline-flex;">✉️ Send Email to ${esc(memberName)}</a>`;
+1196:       showToast("Task assigned! Reflected in member dashboard.");
+1197:     } catch(err) {
+1198:       console.error("createTask error:", err);
+1199:       $("taskMsg").textContent = "Error assigning task: " + err.message;
+1200:       showToast("Could not assign task.", "error");
+1201:     }
+1202:   };
+1203: 
+1204:   // Initialize Role Codex on load
+1205:   window.addEventListener("DOMContentLoaded", () => {
+1206:     if(window.selectRolePillar) window.selectRolePillar("outreach");
+1207:   });
+1208:   if(document.readyState !== "loading") {
+1209:     if(window.selectRolePillar) window.selectRolePillar("outreach");
+1210:   }
+1211: 
