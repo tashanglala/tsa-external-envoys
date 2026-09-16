@@ -1978,16 +1978,30 @@ window.signInWithGoogle=async()=>{
   }
 
   // ---------- Tasks ----------
+  let showCompletedTasks = false;
   async function renderTasks(){
     if(!currentProfile)return;
     const mine=(realtime.myTasks||realtime.tasks||[]).filter(t=>t.assignedTo===currentUser.uid);
+    const active=mine.filter(t=>t.status!=="approved");
+    const completed=mine.filter(t=>t.status==="approved");
     const wrap=$("tasksList");
-    if(!mine.length)wrap.innerHTML='<p class="empty-note">No quests assigned to you yet. Check back soon.</p>';
-    else wrap.innerHTML=mine.map(taskCardHTML).join("");
+    let html="";
+    if(!active.length && !completed.length){
+      html='<p class="empty-note">No quests assigned to you yet. Check back soon.</p>';
+    } else {
+      html = active.length ? active.map(taskCardHTML).join("") : '<p class="empty-note">No active tasks right now — nice work!</p>';
+      if(completed.length){
+        html += showCompletedTasks
+          ? `<button class="btn btn-ghost btn-sm" onclick="toggleCompletedTasks()" style="margin-bottom:1rem;">▲ Hide completed tasks (${completed.length})</button>` + completed.map(taskCardHTML).join("")
+          : `<button class="btn btn-ghost btn-sm" onclick="toggleCompletedTasks()" style="margin-bottom:1rem;">▾ Show completed tasks (${completed.length})</button>`;
+      }
+    }
+    wrap.innerHTML=html;
     const pending=mine.filter(t=>t.status==="pending").length, submitted=mine.filter(t=>t.status!=="pending").length;
     animateNumber($("overviewPending"),pending);animateNumber($("overviewSubmitted"),submitted);animateNumber($("overviewPartners"),(realtime.partners||[]).length);
     const badge=$("taskBadge");if(badge){badge.style.display=pending?"inline-block":"none";badge.textContent=pending;}
   }
+  window.toggleCompletedTasks=()=>{showCompletedTasks=!showCompletedTasks;renderTasks();};
   function animateNumber(el,to){if(!el)return;el.textContent=to;}
   function taskCardHTML(t){
     const status=t.status==="approved"?"Approved":t.status==="submitted"?"Submitted":"Pending";
