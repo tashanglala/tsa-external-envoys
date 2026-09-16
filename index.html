@@ -1997,7 +1997,7 @@ window.signInWithGoogle=async()=>{
     </div>`;
   }
   window.submitTask=async id=>{
-    const t=realtime.tasks.find(x=>x.id===id);if(!t||t.assignedTo!==currentUser.uid)return;
+    const t=(realtime.myTasks||realtime.allTasks||realtime.tasks||[]).find(x=>x.id===id);if(!t||t.assignedTo!==currentUser.uid)return;
     const text=$("submitText-"+id)?.value.trim();const link=$("submitLink-"+id)?.value.trim()||"";
     if(!text){showToast("Describe what you completed first.");return;}
     await updateDoc(doc(db,"tasks",id),{status:"submitted",submission:{text,link,submittedAt:serverTimestamp()}});
@@ -2175,7 +2175,7 @@ window.signInWithGoogle=async()=>{
       if(btn){btn.disabled=false;btn.textContent="✉️ Email Member Directly";}
     }
   };
-  window.approveTask=async id=>{if(currentProfile?.role!=="admin")return;const t=realtime.tasks.find(x=>x.id===id);if(!t)return;await updateDoc(doc(db,"tasks",id),{status:"approved",approvedBy:currentUser.uid,approvedAt:serverTimestamp()});await addDoc(collection(db,"notifications"),{userId:t.assignedTo,type:"task_approved",title:"Task approved",body:`Your task "${t.title}" was approved by the Council.`,read:false,createdAt:serverTimestamp()});showToast("Task approved.");};
+  window.approveTask=async id=>{if(currentProfile?.role!=="admin")return;const t=(realtime.allTasks||realtime.myTasks||realtime.tasks||[]).find(x=>x.id===id);if(!t)return;await updateDoc(doc(db,"tasks",id),{status:"approved",approvedBy:currentUser.uid,approvedAt:serverTimestamp()});await addDoc(collection(db,"notifications"),{userId:t.assignedTo,type:"task_approved",title:"Task approved",body:`Your task "${t.title}" was approved by the Council.`,read:false,createdAt:serverTimestamp()});showToast("Task approved.");};
 
   // ---------- Applications ----------
   window.renderApplications=()=>{if(currentProfile?.role!=="admin")return;const q=($("applicationSearch")?.value||"").trim().toLowerCase();const list=realtime.applications.filter(a=>!q||(a.name||"").toLowerCase().includes(q)||(a.email||"").toLowerCase().includes(q));$("applicationsList").innerHTML=list.length?list.map(a=>applicationCardHTML(a)).join(""):'<p class="empty-note">No applications yet.</p>';const pending=list.filter(a=>a.status==="pending").length;updateBadge("applicationBadge",pending);};
