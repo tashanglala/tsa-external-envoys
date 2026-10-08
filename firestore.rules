@@ -1,78 +1,146 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    function signedIn() { return request.auth != null; }
+    // ---------- Helpers ----------
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
     function isAdmin() {
       return signedIn()
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin"
         && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.active == true;
     }
-    function sameUser(uid) { return signedIn() && request.auth.uid == uid; }
 
-    match /users/{uid} {
-      allow read: if sameUser(uid) || isAdmin();
+    function isActiveUser() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.active == true;
+    }
 
-      // First-time account creation from the app may only create a member.
-      // The initial admin should be created manually in Firestore/Auth.
-      allow create: if sameUser(uid)
-        && request.resource.data.email == request.auth.token.email
-        && request.resource.data.role == 'member'
-        && request.resource.data.active == true
-        && get(/databases/$(database)/documents/roster/$(request.auth.token.email)).data.active == true;
+    // ---------- User profiles ----------
+
+    match /users/{userId} {
+      allow read: if isAdmin() || (signedIn() && request.auth.uid == userId);
+
+      allow create: if signedIn()
+        && request.auth.uid == userId
+        && exists(/databases/$(database)/documents/roster/$(request.resource.data.email))
+        && request.resource.data.role ==
+           get(/databases/$(database)/documents/roster/$(request.resource.data.email)).data.role
+        && request.resource.data.active ==
+           get(/databases/$(database)/documents/roster/$(request.resource.data.email)).data.active;
 
       allow update: if isAdmin()
-        || (sameUser(uid)
-            && request.resource.data.diff(resource.data).affectedKeys()
-              .hasOnly(['displayName','course','bio','updatedAt']));
+        || (
+          signedIn()
+          && request.auth.uid == userId
+          && request.resource.data.role == resource.data.role
+          && request.resource.data.active == resource.data.active
+          && request.resource.data.email == resource.data.email
+        );
+
       allow delete: if isAdmin();
     }
 
-    match /roster/{emailKey} {
-      // Only the specific roster entry is readable before login so the app can
-      // verify whether an email is approved. Keep roster documents non-sensitive.
+    // ---------- Approved roster ----------
+
+    match /roster/{email} {
       allow get: if true;
-      allow list: if isAdmin();
-      allow write: if isAdmin();
+      allow list, create, update, delete: if isAdmin();
     }
+
+    // ---------- Tasks (Classroom-style) ----------
+    // Admin  = teacher: creates tasks, sees every submission at any time
+    //          (even after approval), approves, can reopen.
+    // Member = student: can submit, edit or delete their own submission
+    //          while the task is NOT approved. Once approved it is locked
+    //          (still readable by the member and the admin).
 
     match /tasks/{taskId} {
-      allow read: if isAdmin() || (signedIn() && resource.data.assignedTo == request.auth.uid);
-      allow create: if isAdmin();
+
+      allow read: if isAdmin()
+        || (isActiveUser() && resource.data.assignedTo == request.auth.uid);
+
+      allow create: if isAdmin()
+        && request.resource.data.createdBy == request.auth.uid;
+
       allow update: if isAdmin()
-        || (signedIn() && resource.data.assignedTo == request.auth.uid
-            && request.resource.data.diff(resource.data).affectedKeys()
-              .hasOnly(['status','submission']));
+        || (
+          isActiveUser()
+          && resource.data.assignedTo == request.auth.uid
+          && resource.data.status != "approved"                  // locked after approval
+          && request.resource.data.assignedTo == resource.data.assignedTo
+          && request.resource.data.createdBy == resource.data.createdBy
+          && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(["status", "submission"])
+          && request.resource.data.status in ["pending", "submitted"]   // members can never self-approve
+        );
+
       allow delete: if isAdmin();
     }
 
-    match /partners/{partnerId} {
-      allow read: if signedIn();
-      allow create, update, delete: if isAdmin();
-    }
-
-    match /documents/{documentId} {
-      allow read: if signedIn();
-      allow create, update, delete: if isAdmin();
-    }
-
-    match /applications/{applicationId} {
-      allow create: if true;
-      allow read, update, delete: if isAdmin();
-    }
+    // ---------- Notifications ----------
 
     match /notifications/{notificationId} {
-      allow read: if isAdmin() || (signedIn() && resource.data.userId == request.auth.uid);
-      allow create: if isAdmin() || (signedIn() && request.resource.data.userId == request.auth.uid);
-      allow update: if signedIn()
-        && (isAdmin() || resource.data.userId == request.auth.uid);
-      allow delete: if isAdmin();
+
+      allow read: if isAdmin()
+        || (isActiveUser() && resource.data.userId == request.auth.uid);
+
+      allow create: if isAdmin()
+        || (
+          isActiveUser()
+          && request.resource.data.type == "task_submitted"
+          && request.resource.data.userId != request.auth.uid
+          && exists(/databases/$(database)/documents/users/$(request.resource.data.userId))
+          && get(/databases/$(database)/documents/users/$(request.resource.data.userId)).data.role == "admin"
+        );
+
+      allow update: if isAdmin()
+        || (
+          isActiveUser()
+          && resource.data.userId == request.auth.uid
+          && request.resource.data.userId == resource.data.userId
+        );
+
+      allow delete: if isAdmin()
+        || (isActiveUser() && resource.data.userId == request.auth.uid);
     }
 
-    match /mail/{mailId} {
-      // Only admins may enqueue email. The Trigger Email extension processes it.
-      allow create: if isAdmin();
+    // ---------- Partners ----------
+
+    match /partners/{partnerId} {
+      allow read: if isActiveUser();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // ---------- Applications ----------
+
+    match /applications/{applicationId} {
+      allow create: if
+        request.resource.data.name is string
+        && request.resource.data.email is string
+        && request.resource.data.status == "pending";
+
       allow read, update, delete: if isAdmin();
+    }
+
+    // ---------- MOA metadata ----------
+
+    match /documents/{documentId} {
+      allow read: if isActiveUser();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // ---------- Email queue ----------
+
+    match /mail/{mailId} {
+      allow create: if isAdmin();
+      allow read, update, delete: if false;
     }
   }
 }

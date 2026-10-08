@@ -2130,6 +2130,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(html`<${App}/>`);
       <button class="tab-btn" data-tab="partners" onclick="showPanel('partners')"><span><span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> Partners</span></button>
       <button class="tab-btn admin-only" data-tab="members" onclick="showPanel('members')"><span><span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span> Manage Members</span></button>
       <button class="tab-btn admin-only" data-tab="assign" onclick="showPanel('assign')"><span><span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M12 5l7 3-7 3"/></svg></span> Assign Tasks</span><span class="tab-badge" id="assignBadge" style="display:none"></span></button>
+      <button class="tab-btn admin-only" data-tab="submissions" onclick="showPanel('submissions')"><span><span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg></span> Submitted Tasks</span><span class="tab-badge" id="submissionsBadge" style="display:none"></span></button>
       <button class="tab-btn admin-only" data-tab="applications" onclick="showPanel('applications')"><span><span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 6 10-6"/></svg></span> Applications</span><span class="tab-badge" id="applicationBadge" style="display:none"></span></button>
       <hr class="tab-divider">
       <button class="tab-btn" data-tab="profile" onclick="showPanel('profile')"><span><span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-7 8-7s8 3 8 7"/></svg></span> My Profile</span></button>
@@ -2262,8 +2263,20 @@ ReactDOM.createRoot(document.getElementById('root')).render(html`<${App}/>`);
         <button class="btn btn-gold" onclick="createTask()">Assign Task &amp; Notify</button>
         <p class="form-note" id="taskMsg"></p>
 
-        <h3>All Tasks</h3>
+        <h3>Waiting on members</h3>
         <div id="allTasksList"><div class="skeleton-row"></div><div class="skeleton-row"></div></div>
+      </section>
+
+      <!-- SUBMITTED TASKS (admin) -->
+      <section id="panel-submissions" class="dash-panel admin-only">
+        <h2>Submitted Tasks</h2>
+        <p class="panel-hint">Work your members have turned in. Approved tasks stay here, so you can open them again any time.</p>
+        <div class="filter-row" style="margin-bottom:1rem;">
+          <button class="filter-chip active" id="subFilterReview" onclick="setSubmissionFilter('review')">To review</button>
+          <button class="filter-chip" id="subFilterApproved" onclick="setSubmissionFilter('approved')">Approved</button>
+        </div>
+        <div class="search-field"><input type="text" id="submissionSearch" placeholder="Search by task, event or member…" oninput="renderSubmissions()"></div>
+        <div id="submissionsList"><div class="skeleton-row"></div><div class="skeleton-row"></div></div>
       </section>
 
       <!-- APPLICATIONS (admin) -->
@@ -2572,6 +2585,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(html`<${App}/>`);
     }
     if(name==="documents") renderDocuments();
     if(name==="tasks") renderTasks();
+    if(name==="submissions") renderSubmissions();
     window.toggleSidebar(false);
   };
 
@@ -2899,12 +2913,33 @@ window.signInWithGoogle=async()=>{
     }
     populateMoaSelectors();
     const tasks=realtime.allTasks||realtime.tasks||[];
+    const waiting=tasks.filter(t=>t.status!=="submitted"&&t.status!=="approved");
     const wrap=$("allTasksList");
     if(wrap){
-      wrap.innerHTML=tasks.length?tasks.map(adminTaskHTML).join(""):'<p class="empty-note">No tasks assigned yet.</p>';
+      wrap.innerHTML=waiting.length?waiting.map(adminTaskHTML).join(""):'<p class="empty-note">'+(tasks.length?"Nothing pending. Every assigned task has been turned in. Look in Submitted Tasks.":"No tasks assigned yet.")+'</p>';
     }
-    const awaiting=tasks.filter(t=>t.status==="submitted").length;
-    updateBadge("assignBadge",awaiting);
+    updateBadge("assignBadge",0);
+    renderSubmissions();
+  };
+
+  // ---------- Submitted Tasks (admin) ----------
+  let submissionFilter="review";
+  window.setSubmissionFilter=f=>{submissionFilter=f;renderSubmissions();};
+  window.renderSubmissions=()=>{
+    if(currentProfile?.role!=="admin")return;
+    const tasks=realtime.allTasks||realtime.tasks||[];
+    const review=tasks.filter(t=>t.status==="submitted"), done=tasks.filter(t=>t.status==="approved");
+    const q=($("submissionSearch")?.value||"").trim().toLowerCase();
+    let list=submissionFilter==="approved"?done:review;
+    if(q) list=list.filter(t=>[t.title,t.event,t.assignedToName,t.assignedToEmail].some(v=>String(v||"").toLowerCase().includes(q)));
+    const when=t=>(t.submission?.editedAt||t.submission?.submittedAt)?.seconds||0;
+    list=[...list].sort((a,b)=>when(b)-when(a));
+    const r=$("subFilterReview"),a=$("subFilterApproved");
+    if(r){r.textContent=`To review (${review.length})`;r.classList.toggle("active",submissionFilter==="review");}
+    if(a){a.textContent=`Approved (${done.length})`;a.classList.toggle("active",submissionFilter==="approved");}
+    const wrap=$("submissionsList");
+    if(wrap) wrap.innerHTML=list.length?list.map(adminTaskHTML).join(""):'<p class="empty-note">'+(q?"No matches.":submissionFilter==="approved"?"No approved submissions yet.":"Nothing waiting for review.")+'</p>';
+    updateBadge("submissionsBadge",review.length);
   };
 
   function adminTaskHTML(t){
