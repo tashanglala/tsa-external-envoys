@@ -1643,6 +1643,22 @@
     #homepage .dash-tabs{ scroll-snap-type:x proximity; scroll-padding:0 44px; }
     #homepage .tab-btn{ scroll-snap-align:center; }
   }
+
+  /* ---- Welcome banner vs. page title: clearly different, and the banner goes away once a feature is opened ---- */
+  #homepage.opened .cmd-hero{ display:none; }
+  #homepage .cmd-hero{
+    margin:0.9rem 1rem 0; border:1px solid rgba(247,168,196,0.28); border-radius:20px;
+    background:linear-gradient(135deg, rgba(27,26,74,0.92), rgba(14,14,46,0.55));
+    box-shadow:0 0 30px rgba(247,168,196,0.12);
+  }
+  #homepage .cmd-hero .eyebrow{ display:inline-block; background:rgba(247,168,196,0.16); border-radius:99px; padding:0.2rem 0.6rem; }
+  #homepage .dash-panel > h2{ border-left:4px solid #F7A8C4; padding-left:0.7rem; }
+  #homepage .dash-panel .panel-hint{ color:#FFE8E6; opacity:0.72; font-size:0.9rem; }
+  @media (max-width:780px){
+    #homepage .cmd-hero{ margin:0.7rem 0.8rem 0; padding-left:1rem; padding-right:1rem; }
+    #homepage .dash-panel > h2{ font-size:1.3rem; }
+    #homepage .dash-panel .panel-hint{ font-size:0.84rem; }
+  }
 </style>
 <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 </head>
@@ -4378,6 +4394,17 @@ void main() {
   mo.observe(tabs,{childList:true,subtree:true,attributes:true});
   mo.observe(hp,{attributes:true,attributeFilter:['class']});
   upd(); setTimeout(upd,600);
+}catch(e){}})();
+</script>
+<script>
+/* Show the welcome banner only until the person opens a feature; reset it on log out. */
+(function(){try{
+  var hp=document.getElementById('homepage'),tabs=document.getElementById('dashTabs'); if(!hp||!tabs) return;
+  tabs.addEventListener('click',function(e){
+    if(e.target.closest&&e.target.closest('.tab-btn')){hp.classList.add('opened');window.scrollTo(0,0);}
+  });
+  new MutationObserver(function(){ if(!hp.classList.contains('active')) hp.classList.remove('opened'); })
+    .observe(hp,{attributes:true,attributeFilter:['class']});
 }catch(e){}})();
 </script>
 </body>
