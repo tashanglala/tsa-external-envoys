@@ -1629,18 +1629,17 @@
     #homepage .cmd-hero-text #welcomeSub{ font-size:0.9rem; }
   }
 
-  /* ---- Phone bottom bar: scroll arrows + edge fade ---- */
+  /* ---- Phone bottom bar: scroll arrows pinned to the bar's own edges ---- */
   .nav-arrow{ display:none; }
   @media (max-width:780px){
-    .nav-arrow{
-      position:fixed; bottom:0; z-index:75; width:46px; height:calc(72px + env(safe-area-inset-bottom,0px));
-      padding-bottom:env(safe-area-inset-bottom,0px); border:0; cursor:pointer;
-      display:flex; align-items:center; color:#F7A8C4; font:800 1.9rem/1 'Inter',sans-serif; text-shadow:0 0 12px rgba(247,168,196,0.7);
+    #homepage .dash-tabs .nav-arrow{
+      display:flex; position:sticky; z-index:5; flex:0 0 36px; width:36px; align-self:stretch; margin:0; padding:0; border:0; cursor:pointer;
+      align-items:center; justify-content:center; color:#F7A8C4; font:800 1.8rem/1 'Inter',sans-serif; text-shadow:0 0 12px rgba(247,168,196,0.7);
     }
-    .nav-arrow[hidden]{ display:none; }
-    .nav-arrow.prev{ left:0; justify-content:flex-start; padding-left:0.4rem; background:linear-gradient(90deg,#0E0E2E 40%,rgba(14,14,46,0)); }
-    .nav-arrow.next{ right:0; justify-content:flex-end; padding-right:0.4rem; background:linear-gradient(270deg,#0E0E2E 40%,rgba(14,14,46,0)); }
-    #homepage .dash-tabs{ scroll-snap-type:x proximity; scroll-padding:0 44px; }
+    #homepage .dash-tabs .nav-arrow[hidden]{ display:none; }
+    #homepage .dash-tabs .nav-arrow.prev{ left:0; margin-right:-36px; background:linear-gradient(90deg,#0E0E2E 55%,rgba(14,14,46,0)); }
+    #homepage .dash-tabs .nav-arrow.next{ right:0; margin-left:-36px; background:linear-gradient(270deg,#0E0E2E 55%,rgba(14,14,46,0)); }
+    #homepage .dash-tabs{ scroll-snap-type:x proximity; scroll-padding:0 40px; }
     #homepage .tab-btn{ scroll-snap-align:center; }
   }
 
@@ -1672,6 +1671,32 @@
     #homepage .header-user .status-pill, #homepage #roleBadge{ display:none; }
     #homepage .header-user .btn{ padding:0.45rem 0.7rem; font-size:0.78rem; min-height:38px; white-space:nowrap; }
     #homepage .header-user .notif-btn{ padding:0.45rem 0.6rem !important; }
+  }
+
+  /* ======================================================================
+     PHONE APP SHELL — header on top, only the middle scrolls, tab bar stays
+     at the bottom as a normal layout row (no position:fixed tricks, so
+     it can never disappear or hide under a browser toolbar).
+     ====================================================================== */
+  @media (max-width:780px){
+    #homepage.active{ display:flex; flex-direction:column; height:100vh; height:100dvh; overflow:hidden; }
+    #homepage .topbar{ position:relative; top:auto; flex:0 0 auto; }
+    #homepage .dash-wrap{ flex:1 1 auto; min-height:0; display:flex; flex-direction:column; }
+    #homepage .dash-content{
+      order:1; flex:1 1 auto; min-height:0; overflow-y:auto; overflow-x:hidden;
+      -webkit-overflow-scrolling:touch; overscroll-behavior:contain; padding-bottom:1.2rem !important;
+    }
+    #homepage .dash-tabs{
+      order:2; flex:0 0 auto; position:relative !important; left:auto !important; right:auto !important; bottom:auto !important; top:auto !important;
+      width:100% !important; box-shadow:0 -8px 22px rgba(0,0,0,0.4) !important;
+    }
+    .toast{ bottom:calc(96px + env(safe-area-inset-bottom,0px)) !important; }
+
+    /* MOA / document cards: info on top, buttons underneath (they were running off the screen) */
+    #homepage .document-card{ grid-template-columns:auto minmax(0,1fr); align-items:start; gap:0.8rem; }
+    #homepage .document-card h3, #homepage .document-card p{ overflow-wrap:anywhere; }
+    #homepage .document-card .doc-actions{ grid-column:1 / -1; justify-content:flex-start; width:100%; }
+    #homepage .document-card .doc-actions .btn{ flex:1 1 28%; justify-content:center; }
   }
 </style>
 <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
@@ -4344,7 +4369,7 @@ void main() {
     ctx.quadraticCurveTo(x,y,x,y+r);ctx.quadraticCurveTo(x,y,x-r,y);ctx.quadraticCurveTo(x,y,x,y-r);ctx.fill();}
   function draw(t){
     if(hp.offsetHeight){
-      ctx.clearRect(0,0,w,h);var sy=window.scrollY,P=[],i,j,s,y,a;
+      ctx.clearRect(0,0,w,h);var dc=document.querySelector('.dash-content'),sy=Math.max(window.scrollY,dc?dc.scrollTop:0),P=[],i,j,s,y,a;
       for(i=0;i<stars.length;i++){s=stars[i];y=(((s.y-sy*s.z*.35)%H)+H)%H;if(y>h+10)continue;
         a=.55+.45*Math.sin(t*s.v+s.p);ctx.fillStyle=s.b?'#FFE8E6':'#F7A8C4';
         if(s.b)spark(s.x,y,8+s.r*3,a);else{ctx.globalAlpha=a;ctx.beginPath();ctx.arc(s.x,y,s.r,0,6.3);ctx.fill();}
@@ -4392,22 +4417,22 @@ void main() {
 })();
 </script>
 <script>
-/* Phone bottom bar: arrows + edge fade + auto-center so every tab can be reached. */
+/* Phone bottom bar: arrows live INSIDE the bar (pinned to its left/right edge) so they can never drift away from it. */
 (function(){try{
   var hp=document.getElementById('homepage'),tabs=document.getElementById('dashTabs'); if(!hp||!tabs) return;
-  function mk(cls,label,ch){var b=document.createElement('button');b.type='button';b.className='nav-arrow '+cls;b.setAttribute('aria-label',label);b.textContent=ch;hp.appendChild(b);return b;}
+  function mk(cls,label,ch){var b=document.createElement('button');b.type='button';b.className='nav-arrow '+cls;b.setAttribute('aria-label',label);b.textContent=ch;b.hidden=true;return b;}
   var prev=mk('prev','Scroll tabs left','\u2039'), next=mk('next','Scroll tabs right','\u203A');
-  function upd(){var max=tabs.scrollWidth-tabs.clientWidth;prev.hidden=!(tabs.scrollLeft>6);next.hidden=!(tabs.scrollLeft<max-6);}
+  tabs.insertBefore(prev,tabs.firstChild); tabs.appendChild(next);
+  function setHidden(el,v){ if(el.hidden!==v) el.hidden=v; }
+  function upd(){var max=tabs.scrollWidth-tabs.clientWidth; setHidden(prev,!(tabs.scrollLeft>6)); setHidden(next,!(tabs.scrollLeft<max-6));}
   prev.onclick=function(){tabs.scrollBy({left:-tabs.clientWidth*0.6,behavior:'smooth'});};
   next.onclick=function(){tabs.scrollBy({left:tabs.clientWidth*0.6,behavior:'smooth'});};
   tabs.addEventListener('scroll',upd,{passive:true});
   window.addEventListener('resize',upd);
   tabs.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('.tab-btn');
-    if(b) setTimeout(function(){try{b.scrollIntoView({inline:'center',block:'nearest',behavior:'smooth'});}catch(x){}},30);});
-  var mo=new MutationObserver(function(){setTimeout(upd,50);});
-  mo.observe(tabs,{childList:true,subtree:true,attributes:true});
-  mo.observe(hp,{attributes:true,attributeFilter:['class']});
-  upd(); setTimeout(upd,600);
+    if(b) setTimeout(function(){tabs.scrollTo({left:b.offsetLeft-(tabs.clientWidth-b.offsetWidth)/2,behavior:'smooth'});},30);});
+  new MutationObserver(function(){setTimeout(upd,50);}).observe(hp,{attributes:true,attributeFilter:['class']});
+  upd(); setInterval(upd,800);
 }catch(e){}})();
 </script>
 <script>
@@ -4415,7 +4440,7 @@ void main() {
 (function(){try{
   var hp=document.getElementById('homepage'),tabs=document.getElementById('dashTabs'); if(!hp||!tabs) return;
   tabs.addEventListener('click',function(e){
-    if(e.target.closest&&e.target.closest('.tab-btn')){hp.classList.add('opened');window.scrollTo(0,0);}
+    if(e.target.closest&&e.target.closest('.tab-btn')){hp.classList.add('opened');window.scrollTo(0,0);var dc=hp.querySelector('.dash-content');if(dc)dc.scrollTop=0;}
   });
   new MutationObserver(function(){ if(!hp.classList.contains('active')) hp.classList.remove('opened'); })
     .observe(hp,{attributes:true,attributeFilter:['class']});
