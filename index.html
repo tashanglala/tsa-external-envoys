@@ -2923,6 +2923,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(html`<${App}/>`);
   let currentProfile = null;
   let unsubscribers = [];
   let docFilter = "all";
+  let authFlowBusy = false; // true while Google/sign-up is still creating the profile
   let realtime = {tasks:[], partners:[], applications:[], documents:[], notifications:[], members:[]};
 
   if(firebaseConfigured){
@@ -2988,6 +2989,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(html`<${App}/>`);
       "auth/email-already-in-use":"That email already has a Firebase account. Try logging in.",
       "auth/weak-password":"Use a stronger password with at least 6 characters.",
       "auth/popup-closed-by-user":"Google sign-in was cancelled.",
+      "auth/cancelled-popup-request":"Google sign-in was cancelled.",
+      "auth/account-exists-with-different-credential":"This email already has an account with a password. Log in with your email and password instead.",
+      "auth/operation-not-supported-in-this-environment":"Google sign-in does not work in this browser. Open the site in Chrome or Safari.",
       "auth/popup-blocked":"Your browser blocked the Google sign-in popup. Allow popups and try again.",
       "auth/too-many-requests":"Too many attempts. Please wait a moment and try again.",
       "auth/network-request-failed":"Network error. Check your internet connection.",
@@ -3090,6 +3094,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(html`<${App}/>`);
     if(p!==c){$("signupError").textContent="Passwords do not match.";return;}
     try{
       if(!firebaseConfigured) throw new Error("Firebase configuration is missing.");
+      authFlowBusy=true;
       const cred=await createUserWithEmailAndPassword(auth,email,p);
       let roster=null;
       try{ roster=await rosterByEmail(email); }catch(_){}
@@ -3104,31 +3109,31 @@ ReactDOM.createRoot(document.getElementById('root')).render(html`<${App}/>`);
         role, active:true, course:roster.course||"", bio:"",
         createdAt:serverTimestamp(), updatedAt:serverTimestamp()
       });
-      closeModal("signup"); showToast("Account created. Welcome to the guild.");
+      currentUser=cred.user; currentProfile=await getProfile(cred.user.uid);
+      closeModal("signup"); closeModal("login"); if(currentProfile) await enterHomepage();
+      showToast("Account created. Welcome to the guild.");
     }catch(e){$("signupError").textContent=friendlyAuthError(e);}
+    finally{authFlowBusy=false;}
   };
 
 window.signInWithGoogle=async()=>{
-  if(!firebaseConfigured){
-    showToast("Firebase configuration is missing.","error");
+  if(!firebaseConfigured){showToast("Firebase configuration is missing.","error");return;}
+  $("loginError").textContent="";
+  if(/FBAN|FBAV|FB_IAB|Messenger|Instagram|Line\//i.test(navigator.userAgent)){
+    $("loginError").textContent="Google sign-in is blocked inside Messenger and Facebook. Open this page in Chrome or Safari (tap the ••• menu, then Open in browser).";
     return;
   }
-
+  authFlowBusy=true;
   try{
     const result=await signInWithPopup(auth,googleProvider);
-    const email=result.user.email?.toLowerCase();
-
+    const email=(result.user.email||"").toLowerCase();
     const roster=await rosterByEmail(email);
-
     if(!roster || roster.active===false){
       await signOut(auth);
-      $("loginError").textContent =
-        "This Google account is not on the active TSA roster. Ask an admin to add you first.";
+      $("loginError").textContent="This Google account is not on the active TSA roster. Ask an admin to add you first.";
       return;
     }
-
     const existing=await getDoc(doc(db,"users",result.user.uid));
-
     if(!existing.exists()){
       await setDoc(doc(db,"users",result.user.uid),{
         email,
@@ -3140,14 +3145,18 @@ window.signInWithGoogle=async()=>{
         createdAt:serverTimestamp(),
         updatedAt:serverTimestamp()
       });
+      currentUser=result.user; currentProfile=await getProfile(result.user.uid);
+      closeModal("login"); closeModal("signup");
+      if(currentProfile) await enterHomepage();
     }
-
-    closeModal("login");
-    showToast("Signed in securely with Google.");
-
+    showToast("Signed in with Google.");
   }catch(e){
-    $("loginError").textContent=friendlyAuthError(e);
-  }
+    console.error(e);
+    $("loginError").textContent = e?.code==="permission-denied"
+      ? "Your roster entry could not be matched to this email. Ask an admin to re-add your exact email to the roster."
+      : friendlyAuthError(e);
+    try{ if(auth.currentUser && !currentProfile) await signOut(auth); }catch(_){}
+  }finally{ authFlowBusy=false; }
 };
   window.sendPasswordReset=async()=>{
     const email=$("loginEmail").value.trim().toLowerCase();
@@ -3216,6 +3225,7 @@ window.signInWithGoogle=async()=>{
       if(!user){currentUser=null;currentProfile=null;clearListeners();$("homepage").classList.remove("active");$("landing").classList.remove("hidden");return;}
       try{
         const profile=await getProfile(user.uid);
+        if(!profile && authFlowBusy) return;
         if(!profile || profile.active===false){await signOut(auth);showToast("Your account is not active.","error");return;}
         currentUser=user;currentProfile=profile;closeModal("login");closeModal("signup");await enterHomepage();
       }catch(e){console.error(e);showToast("Could not load your profile.","error");}
@@ -4757,7 +4767,7 @@ void main() {
   tabs.addEventListener('click',function(e){
     if(e.target.closest&&e.target.closest('.tab-btn')){hp.classList.add('opened');window.scrollTo(0,0);var dc=hp.querySelector('.dash-content');if(dc)dc.scrollTop=0;}
   });
-  new MutationObserver(function(){ if(!hp.classList.contains('active')) hp.classList.remove('opened'); })
+  new MutationObserver(function(){ if(!hp.classList.contains('active') && hp.classList.contains('opened')) hp.classList.remove('opened'); })
     .observe(hp,{attributes:true,attributeFilter:['class']});
 }catch(e){}})();
 </script>
