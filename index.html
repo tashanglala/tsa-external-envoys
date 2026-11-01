@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#0D0602">
+<meta name="theme-color" content="#FFF8F0">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="TSA External">
 <link rel="manifest" href="/manifest.json">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
@@ -1535,7 +1535,7 @@
 
   /* New welcome page lives in an isolated frame; the previous landing markup stays in the DOM (hidden) so no app script loses an element. */
   #landing > :not(.welcome-frame){ display:none !important; }
-  #landing .welcome-frame{ display:block; width:100%; height:100vh; height:100dvh; border:0; background:#0D0602; }
+  #landing .welcome-frame{ display:block; width:100%; height:100vh; height:100dvh; border:0; background:#FFF8F0; }
 
   /* ======================================================================
      PHONE APP MODE (<= 780px): Classroom-style bottom navigation,
@@ -1543,7 +1543,7 @@
      ====================================================================== */
   html{ -webkit-tap-highlight-color:transparent; }
   button, a, .tab-btn, .filter-chip{ touch-action:manipulation; }
-  #landing{ background:#0D0602; padding-top:env(safe-area-inset-top,0px); }
+  #landing{ background:#FFF8F0; padding-top:env(safe-area-inset-top,0px); }
   #landing .welcome-frame{ height:calc(100vh - env(safe-area-inset-top,0px)); height:calc(100dvh - env(safe-area-inset-top,0px)); }
   #installPill{
     position:fixed; left:50%; transform:translateX(-50%); z-index:300; display:flex; align-items:center; gap:0.5rem;
@@ -1739,6 +1739,118 @@
     #homepage .topbar .brand-text .t2{ font-size:0.8rem; }
     #homepage .topbar .brand-mark.brand-logo{ width:38px; min-width:38px; height:38px; }
   }
+
+  /* ======================================================================
+     LIGHT THEME — warm white pages, orange accents, dark brown text
+     (this block comes last on purpose: it overrides the earlier dark blocks)
+     ====================================================================== */
+  :root{
+    --night:#FFF8F0; --night-alt:#FFF1E3; --surface:#FFF8F0; --surface-card:#FFFFFF; --surface-card-hover:#FFFFFF;
+    --surface-glass:rgba(255,248,240,0.92);
+    --gold:#FF7A1A; --gold-light:#C2410C; --gold-dark:#C2410C; --gold-glow:rgba(255,122,26,0.2);
+    --gold-border:rgba(232,89,12,0.25); --gold-border-strong:rgba(232,89,12,0.45);
+    --parchment:#2B1206; --parchment-body:#2B1206; --text-muted:#7C3A10; --text-dim:#7C3A10; --ink:#2B1206;
+  }
+  #homepage{
+    --night:#FFF8F0; --night-alt:#FFF1E3; --surface:#FFF8F0; --surface-card:#FFFFFF; --surface-card-hover:#FFFFFF;
+    --surface-glass:rgba(255,248,240,0.92);
+    --gold:#FF7A1A; --gold-light:#C2410C; --gold-dark:#C2410C; --gold-glow:rgba(255,122,26,0.2);
+    --gold-border:rgba(232,89,12,0.25); --gold-border-strong:rgba(232,89,12,0.45);
+    --parchment:#2B1206; --parchment-body:#2B1206; --text-muted:#7C3A10; --text-dim:#7C3A10;
+    --pro-gold:#C2410C; --pro-text:#2B1206; --pro-text-dim:#2B1206; --pro-text-faint:#7C3A10;
+    --ember:#E8590C; --moss:#FF7A1A; --sapphire:#C2410C; --ruby:#E8590C;
+    background:#FFF8F0; color:#2B1206;
+  }
+  #homepage::before{ content:none; }
+  #homepage::after{
+    background:
+      linear-gradient(rgba(232,89,12,0.08) 1px,transparent 1px) 0 0/56px 56px,
+      linear-gradient(90deg,rgba(232,89,12,0.08) 1px,transparent 1px) 0 0/56px 56px,
+      radial-gradient(ellipse 75% 55% at 0% 0%, rgba(255,138,51,0.30), transparent 65%),
+      radial-gradient(ellipse 60% 50% at 100% 100%, rgba(245,158,11,0.16), transparent 70%);
+  }
+  #homepage .topbar, #homepage .topbar.scrolled{ background:rgba(255,248,240,0.9); border-bottom:1px solid rgba(232,89,12,0.28); }
+  #homepage .topbar.scrolled{ box-shadow:0 8px 24px rgba(232,89,12,0.12); }
+  #homepage .brand-text .t1, #homepage .topbar .brand-text .t1{ color:#C2410C; }
+  #homepage .brand-text .t2, #homepage .topbar .brand-text .t2{ color:#2B1206; }
+  #homepage .topbar .btn-ghost{ color:#2B1206; border-color:rgba(43,18,6,0.35); background:transparent; }
+  #homepage .topbar .btn-ghost:hover{ background:rgba(255,122,26,0.14); border-color:#FF7A1A; color:#2B1206; }
+  #homepage .topbar .status-pill{ background:rgba(255,122,26,0.16); color:#C2410C; border:1px solid rgba(232,89,12,0.5); }
+  #homepage .dash-tabs{ background:rgba(255,248,240,0.88); border-right:1px solid rgba(232,89,12,0.25); }
+  #homepage .tab-btn{ color:#2B1206; opacity:1; }
+  #homepage .tab-btn:hover{ background:rgba(255,122,26,0.14); color:#2B1206; }
+  #homepage .tab-btn.active{ background:#FF7A1A; color:#2B1206; box-shadow:0 6px 18px rgba(232,89,12,0.3); }
+  #homepage .tab-badge{ background:#C2410C; color:#fff; }
+  #homepage .tab-btn.active .tab-badge{ background:#2B1206; color:#FF7A1A; }
+  #homepage .tab-divider{ border-top-color:rgba(232,89,12,0.25); }
+  #homepage .eyebrow, #homepage .overview-card .eyebrow{ color:#C2410C; }
+  #homepage .cmd-hero-text #welcomeName, #homepage .home-hero h1{ color:#2B1206; }
+  #homepage .cmd-hero-text p, #homepage #welcomeSub{ color:#7C3A10; }
+  #homepage .dash-panel h2, #homepage .dash-panel h3{ color:#2B1206; }
+  #homepage .panel-hint, #homepage .dash-panel .panel-hint{ color:#7C3A10; opacity:1; }
+  #homepage .cmd-hero{ background:linear-gradient(135deg,#FFFFFF,#FFF1E3); border:1px solid rgba(232,89,12,0.3); box-shadow:0 10px 30px rgba(232,89,12,0.12); }
+  #homepage .id-card{ background:#fff; border:1px solid rgba(232,89,12,0.4); box-shadow:0 8px 22px rgba(232,89,12,0.16); }
+  #homepage .id-card-avatar{ background:#FF7A1A; color:#2B1206; }
+  #homepage .id-card-name{ color:#2B1206; } #homepage .id-card-role{ color:#C2410C; }
+  #homepage .id-card-org{ color:#2B1206; border-top-color:rgba(232,89,12,0.25); }
+  #homepage .overview-card, #homepage .task-card, #homepage .partner-card,
+  #homepage .application-card, #homepage .document-card, #homepage .member-row{
+    background:#FFFFFF; border:1px solid rgba(232,89,12,0.28); box-shadow:0 4px 16px rgba(232,89,12,0.08);
+  }
+  #homepage .task-card:hover, #homepage .partner-card:hover, #homepage .application-card:hover, #homepage .document-card:hover{
+    border-color:#FF7A1A; box-shadow:0 12px 30px rgba(232,89,12,0.2);
+  }
+  #homepage .overview-number{ color:#2B1206; }
+  #homepage .overview-label, #homepage .due-note, #homepage .member-email, #homepage .partner-notes{ color:#7C3A10; }
+  #homepage .task-top h3, #homepage .partner-card h3, #homepage .member-info strong, #homepage .profile-card-info .name{ color:#2B1206; }
+  #homepage .task-card p, #homepage .partner-card p, #homepage .application-card p{ color:#2B1206; }
+  #homepage .meta-chip{ background:rgba(255,122,26,0.14); color:#2B1206; }
+  #homepage .upload-zone{ background:rgba(255,122,26,0.06); border-color:rgba(232,89,12,0.5); }
+  #homepage .document-icon{ background:rgba(255,122,26,0.18); }
+  #homepage .filter-chip{ background:#fff; color:#2B1206; border-color:rgba(43,18,6,0.3); }
+  #homepage .filter-chip.active, #homepage .filter-chip:hover{ background:#FF7A1A; color:#2B1206; border-color:#FF7A1A; }
+  #homepage .sub-meta, .sub-meta{ color:#C2410C; }
+  #homepage .st-pending{ background:rgba(232,89,12,0.16); color:#9A3412; border:1px solid #E8590C; font-weight:800; }
+  #homepage .st-submitted{ background:rgba(255,122,26,0.12); color:#C2410C; border:1px solid rgba(232,89,12,0.55); font-weight:700; }
+  #homepage .st-approved{ background:rgba(43,18,6,0.08); color:#2B1206; border:1px solid rgba(43,18,6,0.4); font-weight:700; }
+  #homepage .status-pill{ background:rgba(43,18,6,0.08); color:#2B1206; border:1px solid rgba(43,18,6,0.35); }
+  #homepage .pill-gold{ background:rgba(255,122,26,0.16); color:#C2410C; border-color:rgba(232,89,12,0.5); }
+  #homepage .pill-off{ background:rgba(232,89,12,0.18); color:#9A3412; border-color:#E8590C; }
+  #homepage .priority-high{ border-left-color:#E8590C; } #homepage .priority-normal{ border-left-color:#FF7A1A; } #homepage .priority-low{ border-left-color:#2B1206; }
+  #homepage .btn-gold, .btn-gold{ background:#FF7A1A; color:#2B1206; box-shadow:0 6px 18px rgba(232,89,12,0.3); }
+  #homepage .btn-gold:hover, .btn-gold:hover{ background:#FF9440; box-shadow:0 10px 24px rgba(232,89,12,0.4); }
+  #homepage .btn-ghost{ background:transparent; color:#2B1206; border-color:rgba(43,18,6,0.35); }
+  #homepage .btn-ghost:hover{ background:rgba(255,122,26,0.14); border-color:#FF7A1A; color:#2B1206; }
+  #homepage .field label, .scroll-modal .field label{ color:#2B1206; }
+  #homepage .field input, #homepage .field select, #homepage .field textarea, #homepage .search-field input,
+  .scroll-modal .field input, .scroll-modal .field select, .scroll-modal .field textarea{
+    background:#fff; border:1px solid rgba(43,18,6,0.3); color:#2B1206; color-scheme:light;
+  }
+  #homepage select, .scroll-modal select{ background-color:#fff !important; color:#2B1206 !important; color-scheme:light; }
+  #homepage .field input::placeholder, #homepage .field textarea::placeholder, #homepage .search-field input::placeholder,
+  .scroll-modal .field input::placeholder, .scroll-modal .field textarea::placeholder{ color:#9A5A2E; opacity:0.7; }
+  #homepage .field input:focus, #homepage .field select:focus, #homepage .field textarea:focus, #homepage .search-field input:focus,
+  .scroll-modal .field input:focus, .scroll-modal .field select:focus, .scroll-modal .field textarea:focus{ border-color:#FF7A1A; box-shadow:0 0 0 4px rgba(255,122,26,0.22); }
+  #homepage .switch-link{ color:#C2410C; }
+  #homepage ::-webkit-scrollbar-track{ background:#FFF8F0; } #homepage ::-webkit-scrollbar-thumb{ background:#FF7A1A; }
+  .overlay{ background:rgba(43,18,6,0.55); }
+  .scroll-modal{ background:#FFFFFF; color:#2B1206; border:1px solid rgba(232,89,12,0.5); box-shadow:0 24px 70px rgba(43,18,6,0.35), 0 0 35px rgba(255,122,26,0.15); }
+  .scroll-modal h3{ color:#2B1206; border-bottom-color:rgba(232,89,12,0.3); }
+  .scroll-modal .modal-sub{ color:#7C3A10; }
+  .modal-close{ color:#7C3A10; }
+  .notification-panel{ background:#fff; border:1px solid rgba(232,89,12,0.45); box-shadow:0 20px 50px rgba(43,18,6,0.25); }
+  .notification-item{ border-bottom-color:rgba(232,89,12,0.15); } .notification-item:hover{ background:rgba(255,122,26,0.08); }
+  .notification-item strong{ color:#2B1206; } .notification-item span{ color:#7C3A10; }
+  .toast{ background:#2B1206; color:#FFF1E3; border-color:#2B1206; }
+  .media-notice{ background:#FFF1E3; border:1px dashed #E8590C; border-radius:12px; padding:0.75rem 0.9rem; font-size:0.86rem; color:#2B1206; margin:0.2rem 0 1rem; line-height:1.45; }
+  .media-check{ color:#2B1206; }
+  .media-fallback{ margin-top:0.9rem; font-size:0.85rem; color:#9A3412; } .media-fallback a{ color:#C2410C; font-weight:700; text-decoration:underline; }
+  @media (max-width:780px){
+    #homepage .dash-tabs{ background:rgba(255,248,240,0.97) !important; border-top:1px solid rgba(232,89,12,0.35); box-shadow:0 -8px 22px rgba(232,89,12,0.14) !important; }
+    #homepage .dash-tabs .nav-arrow.prev{ background:linear-gradient(90deg,#FFF8F0 55%,rgba(255,248,240,0)); }
+    #homepage .dash-tabs .nav-arrow.next{ background:linear-gradient(270deg,#FFF8F0 55%,rgba(255,248,240,0)); }
+    #homepage .dash-tabs .nav-arrow{ color:#C2410C; text-shadow:none; }
+  }
 </style>
 <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 </head>
@@ -1873,6 +1985,7 @@ h2{font-size:clamp(1.6rem,3.6vw,2.7rem);text-transform:uppercase;letter-spacing:
 .msteps li::before{content:counter(s);width:28px;height:28px;border-radius:50%;background:var(--pink);color:#0D0602;display:grid;place-items:center;font-weight:800;font-size:.85rem;flex:none}
 .mnote{font-size:.82rem;opacity:.75;margin-top:1rem}
 @media(max-width:860px){.mg{grid-template-columns:1fr}.links{display:none}}
+
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.rv{opacity:1;transform:none}.w span{transform:none}html{scroll-behavior:auto}}
 /* ===== Night-sky / constellation theme (colors taken from the reference image) ===== */
 :root{--navy:#0D0602;--linen:#0D0602;--gr:#FFF1E3;--pink:#FF7A1A;--hot:#E8590C;--blos:#231108;--mah:#FF7A1A;--line:rgba(255,122,26,.22)}
@@ -1915,6 +2028,43 @@ nav.s{background:rgba(13,6,2,.82)}
 .cta .g{color:var(--navy);box-shadow:inset 0 0 0 2px var(--navy)}.cta .g:hover{background:var(--navy);color:var(--pink)}
 .cta .d{background:var(--navy);color:var(--pink)}
 .toast{color:var(--navy)}
+/* ===== LIGHT THEME: warm white page, orange accents, dark brown text ===== */
+:root{--navy:#FFF8F0;--linen:#FFF8F0;--gr:#2B1206;--pink:#FF7A1A;--hot:#E8590C;--blos:#FFE9D6;--mah:#C2410C;--line:rgba(43,18,6,.14)}
+body{background:radial-gradient(ellipse 85% 55% at 6% 0,rgba(255,138,51,.30),transparent 62%),radial-gradient(ellipse 60% 50% at 100% 100%,rgba(245,158,11,.20),transparent 68%),#FFF8F0;color:#2B1206}
+body::before{background:linear-gradient(rgba(232,89,12,.09) 1px,transparent 1px) 0 0/56px 56px,linear-gradient(90deg,rgba(232,89,12,.09) 1px,transparent 1px) 0 0/56px 56px}
+nav.s{background:rgba(255,248,240,.92)}
+.logo{color:#2B1206}.logo small{color:#C2410C}
+.links a{color:#C2410C}.links a:hover{color:#2B1206}
+.logo i.lg{box-shadow:0 6px 18px rgba(232,89,12,.35)}
+.p,.hl{color:#2B1206}
+.p{box-shadow:0 8px 22px rgba(232,89,12,.35)}.p:hover{background:#FF9440;color:#2B1206}
+.g{color:#2B1206;box-shadow:inset 0 0 0 2px #2B1206}.g:hover{background:#2B1206;color:#FFF8F0}
+.d{background:#C2410C;color:#fff}.d:hover{background:#2B1206}
+.tag{background:rgba(255,122,26,.14);border:1px solid rgba(232,89,12,.45);color:#C2410C}
+.k{color:#C2410C}
+.lead,.sub{color:#2B1206}
+.mq{background:#FF7A1A;color:#2B1206;box-shadow:0 10px 30px rgba(232,89,12,.3)}.mt b{color:#2B1206}
+.fc{background:#fff;border:1.5px solid rgba(232,89,12,.4);box-shadow:0 10px 30px rgba(232,89,12,.10);backdrop-filter:none}
+.fc:hover{box-shadow:0 18px 44px rgba(232,89,12,.25);border-color:#FF7A1A}
+.c0,.c3{background:#fff}.c1{background:#FFF1E3}.c2{background:#FF7A1A;color:#2B1206}
+.pr{background:linear-gradient(180deg,transparent,rgba(255,122,26,.10),transparent)}
+.tr{background:rgba(43,18,6,.15)}.tf{box-shadow:0 0 12px rgba(255,122,26,.6)}
+.dot{background:#fff;border-color:#2B1206}.st.on .dot{background:#FF7A1A;color:#2B1206;box-shadow:0 0 18px rgba(255,122,26,.6)}
+.fq{border-bottom:1px solid rgba(43,18,6,.18)}
+.pl{background:#FFE9D6;color:#2B1206}.fq.o .pl{background:#FF7A1A;color:#2B1206}
+.cta{background:#FF7A1A;color:#2B1206;border:2px solid #2B1206;box-shadow:8px 10px 0 #2B1206}
+.cta .g{color:#2B1206;box-shadow:inset 0 0 0 2px #2B1206}.cta .g:hover{background:#2B1206;color:#FF7A1A}
+.cta .d{background:#2B1206;color:#FFF1E3}.cta .d:hover{background:#fff;color:#2B1206}
+.mb{background:#fff;border:1px solid rgba(232,89,12,.3);box-shadow:0 8px 24px rgba(232,89,12,.08)}
+.mcard{background:linear-gradient(160deg,#FFE3C8,#fff);border:2px solid #FF7A1A;box-shadow:0 20px 60px rgba(232,89,12,.22)}
+.mtag{color:#C2410C;background:rgba(255,122,26,.14);border-color:rgba(232,89,12,.55)}
+.msteps li::before{background:#FF7A1A;color:#2B1206}
+.terms{display:flex;gap:.5rem;justify-content:center;flex-wrap:wrap;margin:0 0 1.2rem}
+.terms span{background:#fff;border:1.5px solid #FF7A1A;color:#C2410C;border-radius:99px;padding:.3rem .8rem;font-weight:800;font-size:.8rem}
+.mutual{background:#FFF1E3;border:1px dashed #E8590C;border-radius:14px;padding:.7rem .9rem;font-size:.86rem;margin:0 0 1.3rem;text-align:left}
+.mnote a{color:#C2410C}
+footer{border-top:1px solid rgba(43,18,6,.14)}
+.toast{background:#2B1206;color:#FFF1E3}
 </style>
 </head>
 <body>
@@ -1970,14 +2120,14 @@ function Hero({y}){
         <div className=&quot;ctas&quot;><button className=&quot;btn p&quot; onClick=${()=>go('apply')}>Apply to External Affairs →</button><button className=&quot;btn g&quot; onClick=${()=>go('login')}>Member Login</button><button className=&quot;btn g&quot; onClick=${()=>go('media')}>Media Partner</button></div>
       </div>
       <div className=&quot;vis&quot;>
-        <div className=&quot;big&quot; style=${px(.06)}><svg viewBox=&quot;0 0 300 300&quot; fill=&quot;none&quot; strokeLinecap=&quot;round&quot; strokeLinejoin=&quot;round&quot;><defs><linearGradient id=&quot;gl&quot; x1=&quot;0&quot; y1=&quot;0&quot; x2=&quot;0&quot; y2=&quot;1&quot;><stop offset=&quot;0&quot; stopColor=&quot;#FFF1E3&quot;/><stop offset=&quot;1&quot; stopColor=&quot;#FF7A1A&quot;/></linearGradient></defs>
-          <polyline points=&quot;30,46 78,22 128,50&quot; stroke=&quot;#FF7A1A&quot; strokeWidth=&quot;1.2&quot; opacity=&quot;.6&quot;/><polyline points=&quot;226,30 272,64&quot; stroke=&quot;#FF7A1A&quot; strokeWidth=&quot;1.2&quot; opacity=&quot;.6&quot;/>${[[30,46],[78,22],[128,50],[226,30],[272,64]].map((c,i)=>html`<circle key=${i} cx=${c[0]} cy=${c[1]} r=&quot;3.2&quot; fill=&quot;#FFF1E3&quot;/>`)}
+        <div className=&quot;big&quot; style=${px(.06)}><svg viewBox=&quot;0 0 300 300&quot; fill=&quot;none&quot; strokeLinecap=&quot;round&quot; strokeLinejoin=&quot;round&quot;><defs><linearGradient id=&quot;gl&quot; x1=&quot;0&quot; y1=&quot;0&quot; x2=&quot;0&quot; y2=&quot;1&quot;><stop offset=&quot;0&quot; stopColor=&quot;#FFD7B0&quot;/><stop offset=&quot;1&quot; stopColor=&quot;#FF7A1A&quot;/></linearGradient></defs>
+          <polyline points=&quot;30,46 78,22 128,50&quot; stroke=&quot;#FF7A1A&quot; strokeWidth=&quot;1.2&quot; opacity=&quot;.6&quot;/><polyline points=&quot;226,30 272,64&quot; stroke=&quot;#FF7A1A&quot; strokeWidth=&quot;1.2&quot; opacity=&quot;.6&quot;/>${[[30,46],[78,22],[128,50],[226,30],[272,64]].map((c,i)=>html`<circle key=${i} cx=${c[0]} cy=${c[1]} r=&quot;3.2&quot; fill=&quot;#C2410C&quot;/>`)}
           <path d=&quot;M96 276H204M112 262H188&quot; stroke=&quot;#E8590C&quot; strokeWidth=&quot;6&quot;/><path d=&quot;M104 286H196&quot; stroke=&quot;#FF7A1A&quot; strokeWidth=&quot;4&quot;/>
           <rect x=&quot;145&quot; y=&quot;74&quot; width=&quot;10&quot; height=&quot;188&quot; rx=&quot;5&quot; fill=&quot;url(#gl)&quot; stroke=&quot;#E8590C&quot; strokeWidth=&quot;2&quot;/>
-          <g className=&quot;sway&quot;><path d=&quot;M44 100Q150 78 256 100&quot; stroke=&quot;#E8590C&quot; strokeWidth=&quot;8&quot;/><path d=&quot;M44 100Q150 78 256 100&quot; stroke=&quot;#FFF1E3&quot; strokeWidth=&quot;3&quot;/><circle cx=&quot;150&quot; cy=&quot;86&quot; r=&quot;11&quot; fill=&quot;url(#gl)&quot; stroke=&quot;#E8590C&quot; strokeWidth=&quot;2&quot;/>
+          <g className=&quot;sway&quot;><path d=&quot;M44 100Q150 78 256 100&quot; stroke=&quot;#E8590C&quot; strokeWidth=&quot;8&quot;/><path d=&quot;M44 100Q150 78 256 100&quot; stroke=&quot;#C2410C&quot; strokeWidth=&quot;3&quot;/><circle cx=&quot;150&quot; cy=&quot;86&quot; r=&quot;11&quot; fill=&quot;url(#gl)&quot; stroke=&quot;#E8590C&quot; strokeWidth=&quot;2&quot;/>
             <g className=&quot;pan&quot; style=${{transformOrigin:'48px 102px'}}><path d=&quot;M48 102L16 192M48 102L80 192&quot; stroke=&quot;#FF7A1A&quot; strokeWidth=&quot;2&quot;/><path d=&quot;M8 192H88Q80 238 48 238Q16 238 8 192Z&quot; fill=&quot;url(#gl)&quot; stroke=&quot;#E8590C&quot; strokeWidth=&quot;2.5&quot;/></g>
             <g className=&quot;pan&quot; style=${{transformOrigin:'252px 102px'}}><path d=&quot;M252 102L220 192M252 102L284 192&quot; stroke=&quot;#FF7A1A&quot; strokeWidth=&quot;2&quot;/><path d=&quot;M212 192H292Q284 238 252 238Q220 238 212 192Z&quot; fill=&quot;url(#gl)&quot; stroke=&quot;#E8590C&quot; strokeWidth=&quot;2.5&quot;/></g></g>
-          <path d=&quot;M150 52L156 68L150 64L144 68Z&quot; fill=&quot;#FFF1E3&quot; stroke=&quot;#E8590C&quot; strokeWidth=&quot;1.5&quot;/><circle cx=&quot;150&quot; cy=&quot;44&quot; r=&quot;6&quot; fill=&quot;#FFF1E3&quot; stroke=&quot;#E8590C&quot; strokeWidth=&quot;2&quot;/></svg></div>
+          <path d=&quot;M150 52L156 68L150 64L144 68Z&quot; fill=&quot;#C2410C&quot; stroke=&quot;#E8590C&quot; strokeWidth=&quot;1.5&quot;/><circle cx=&quot;150&quot; cy=&quot;44&quot; r=&quot;6&quot; fill=&quot;#C2410C&quot; stroke=&quot;#E8590C&quot; strokeWidth=&quot;2&quot;/></svg></div>
         <span className=&quot;spk&quot; style=${{left:'8%',top:'16%'}}>✦</span><span className=&quot;spk&quot; style=${{right:'6%',top:'46%',animationDelay:'-1s',fontSize:'1rem'}}>✦</span><span className=&quot;spk&quot; style=${{left:'30%',bottom:'4%',animationDelay:'-2s'}}>✦</span>
       </div>
     </div>
@@ -2022,7 +2172,7 @@ function How({y}){
 }
 
 const QA=[
-  ['Can my media organization partner with TSA?','Yes. Use Apply as Media Partner. The External Affairs Committee reviews every request, and approved partners are added to the TSA system as permanent media partners.'],
+  ['Can my media organization partner with TSA?','Yes. Choose Apply as Media Partner and pick one school year, 3 years or 4 years. Your application is emailed to the External Affairs Committee, who review it and reply. Once you avail it, the partnership applies to both organizations for the whole term.'],
   ['Who can apply?','Students of Bicol University who want to represent TSA in partnerships and outreach. Use your bicol-u.edu.ph email when you apply.'],
   ['What happens after I apply?','Your application goes to the External Affairs Committee. An admin reviews it and, once approved, adds you to the TSA roster.'],
   ['How do I log in?','Members log in with an approved email. If your email is not on the roster yet, ask an admin to add or activate you.'],
@@ -2033,20 +2183,20 @@ const LOCKUP=&quot;data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQQAAAEACAYAAAB
 const BEN=[['📰','Official coverage','Cover TSA events, MOA signings and announcements with first-hand access.'],
   ['📸','Press kit and access','Get logos, photos and event details before they go public.'],
   ['🤝','Co-branded content','Feature TSA projects together through shared posts and stories.'],
-  ['⭐','Permanent partner status','Approved partners are added to the TSA system and recognized year after year.']];
+  ['⭐','A partnership for both sides','Choose one school year, three years or four years. Once you avail it, it is a mutual commitment of both organizations for the whole term.']];
 function Media(){
   return html`<section className=&quot;sec&quot; id=&quot;media&quot;><div className=&quot;wrap&quot;><div className=&quot;mg&quot;>
     <div>
-      <${Reveal}><span className=&quot;k&quot;>Media partners</span><h2>Tell our story. Partner with us for good.</h2><p className=&quot;sub&quot;>Are you a news page, publication, radio or TV station, podcast or content creator? Join the TSA network as a permanent media partner.</p><//>
+      <${Reveal}><span className=&quot;k&quot;>Media partners</span><h2>Tell our story. Partner with us for good.</h2><p className=&quot;sub&quot;>Are you a news page, publication, radio or TV station, podcast or content creator? Join the TSA network as a media partner for one school year, three years or four years.</p><//>
       <div className=&quot;mben&quot;>${BEN.map((b,i)=>html`<${Reveal} key=${i} delay=${i*90} y=${26}><div className=&quot;mb&quot;><span className=&quot;me&quot;>${b[0]}</span><div><h3>${b[1]}</h3><p>${b[2]}</p></div></div><//>`)}</div>
     </div>
     <${Reveal} y=${40}><div className=&quot;mcard&quot;>
       <img className=&quot;mlogo&quot; src=${LOCKUP} alt=&quot;TechSystems Association&quot;/>
-      <span className=&quot;mtag&quot;>Permanent partnership</span>
+      <span className=&quot;mtag&quot;>Mutual partnership</span>
       <h3>Apply as a Media Partner</h3>
-      <ol className=&quot;msteps&quot;><li>Send your details</li><li>The committee reviews them</li><li>You join as a permanent partner</li></ol>
+      <div className=&quot;terms&quot;><span>1 school year</span><span>3 years</span><span>4 years</span></div><ol className=&quot;msteps&quot;><li>Pick how long you want to partner</li><li>Send your details</li><li>The committee reviews and replies</li></ol><p className=&quot;mutual&quot;><b>Once you avail it, the partnership is for both organizations</b> for the whole term you choose.</p>
       <button className=&quot;btn p&quot; onClick=${()=>go('media')}>Apply as Media Partner →</button>
-      <p className=&quot;mnote&quot;>Your information is saved in the TSA system and reviewed by the External Affairs Committee.</p>
+      <p className=&quot;mnote&quot;>Your application is emailed to the External Affairs Committee. You can also write to <a href=&quot;mailto:tsa.externalcommittee@gmail.com&quot; style=${{textDecoration:&quot;underline&quot;,fontWeight:700}}>tsa.externalcommittee@gmail.com</a>.</p>
     </div><//>
   </div></div></section>`;
 }
@@ -2081,16 +2231,16 @@ function Sky(){
     const draw=t=>{
       ctx.clearRect(0,0,w,h);const sy=scrollY,P=[];
       for(const s of stars){const y=(((s.y-sy*s.z*.35)%H)+H)%H;if(y>h+10)continue;
-        const a=.45+.55*Math.sin(t*s.v+s.p);ctx.fillStyle=s.b?'#FFF1E3':'#FF7A1A';
+        const a=.45+.55*Math.sin(t*s.v+s.p);ctx.fillStyle=s.b?'#E8590C':'#FF7A1A';
         if(s.b)spark(s.x,y,7+s.r*3,a);else{ctx.globalAlpha=a*.9;ctx.beginPath();ctx.arc(s.x,y,s.r,0,6.3);ctx.fill()}
         if(s.l)P.push([s.x,y])}
       ctx.lineWidth=.7;ctx.strokeStyle='#FF7A1A';
       for(let i=0;i<P.length;i++){for(let j=i+1;j<P.length;j++){const d=Math.hypot(P[i][0]-P[j][0],P[i][1]-P[j][1]);
         if(d<120){ctx.globalAlpha=(1-d/120)*.35;ctx.beginPath();ctx.moveTo(P[i][0],P[i][1]);ctx.lineTo(P[j][0],P[j][1]);ctx.stroke()}}
         const dm=Math.hypot(P[i][0]-m.x,P[i][1]-m.y);
-        if(dm<170){ctx.globalAlpha=(1-dm/170)*.8;ctx.strokeStyle='#FFF1E3';ctx.beginPath();ctx.moveTo(P[i][0],P[i][1]);ctx.lineTo(m.x,m.y);ctx.stroke();ctx.strokeStyle='#FF7A1A'}}
+        if(dm<170){ctx.globalAlpha=(1-dm/170)*.8;ctx.strokeStyle='#C2410C';ctx.beginPath();ctx.moveTo(P[i][0],P[i][1]);ctx.lineTo(m.x,m.y);ctx.stroke();ctx.strokeStyle='#FF7A1A'}}
       if(!sh&amp;&amp;Math.random()<.003)sh={x:Math.random()*w*.8+w*.2,y:Math.random()*h*.4,l:0};
-      if(sh){sh.x-=9;sh.y+=4.5;sh.l+=1;const g=ctx.createLinearGradient(sh.x,sh.y,sh.x+90,sh.y-45);g.addColorStop(0,'rgba(255,241,227,.9)');g.addColorStop(1,'rgba(255,241,227,0)');
+      if(sh){sh.x-=9;sh.y+=4.5;sh.l+=1;const g=ctx.createLinearGradient(sh.x,sh.y,sh.x+90,sh.y-45);g.addColorStop(0,'rgba(194,65,12,.9)');g.addColorStop(1,'rgba(194,65,12,0)');
         ctx.globalAlpha=1;ctx.strokeStyle=g;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(sh.x,sh.y);ctx.lineTo(sh.x+90,sh.y-45);ctx.stroke();if(sh.l>70)sh=null}
       ctx.globalAlpha=1;if(!reduce)raf=requestAnimationFrame(draw)};
     const mv=e=>{m={x:e.clientX,y:e.clientY}},rs=()=>{init();if(reduce)draw(0)};
@@ -2360,7 +2510,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(html`<${App}/>`);
 
   <footer>
     <div class="rule"></div>
-    TechSystems Association — Bicol University, Polangui Campus<br>
+    TechSystems Association — Bicol University, Polangui<br>
     tsa.bupolangui@bicol-u.edu.ph
   </footer>
 </div>
@@ -2688,13 +2838,14 @@ ReactDOM.createRoot(document.getElementById('root')).render(html`<${App}/>`);
     <button class="modal-close" onclick="closeModal('media')">✕</button>
     <div id="mediaFormWrap">
       <h3>Apply as a Media Partner</h3>
-      <p class="modal-sub">For media organizations that want a permanent partnership with the TechSystems Association. Your details are saved in the TSA system for the External Affairs Committee to review.</p>
+      <p class="modal-sub">Your application is sent by email to the TSA External Affairs Committee (tsa.externalcommittee@gmail.com). We will reply to the email you give below.</p>
       <form id="mediaForm" onsubmit="handleMediaApply(event)">
         <div class="field"><label for="mediaOrg">Media organization / page name</label><input type="text" id="mediaOrg" required maxlength="120" placeholder="e.g. Polangui Today"></div>
-        <div class="field"><label for="mediaType">Type of media</label>
-          <select id="mediaType" required>
-            <option value="">Select one…</option><option>Online news / Facebook page</option><option>Newspaper / Magazine / Publication</option><option>Radio</option><option>Television</option><option>Podcast / Vlog / Content creator</option><option>Student publication</option><option>Other</option>
+        <div class="field"><label for="mediaTerm">How long do you want to partner?</label>
+          <select id="mediaTerm" required>
+            <option value="">Select a term…</option><option>One (1) school year</option><option>Three (3) years</option><option>Four (4) years</option>
           </select></div>
+        <div class="media-notice"><b>Please read:</b> once you avail a partnership term, it is a <b>mutual partnership</b>. It applies to <b>both organizations</b>, yours and TechSystems Association, for the whole term you choose.</div>
         <div class="field"><label for="mediaContact">Contact person</label><input type="text" id="mediaContact" required maxlength="100" placeholder="Full name"></div>
         <div class="field"><label for="mediaRole">Your position</label><input type="text" id="mediaRole" required maxlength="100" placeholder="e.g. Editor-in-Chief"></div>
         <div class="field"><label for="mediaEmail">Email</label><input type="email" id="mediaEmail" required maxlength="120" placeholder="newsroom@example.com"></div>
@@ -2703,15 +2854,16 @@ ReactDOM.createRoot(document.getElementById('root')).render(html`<${App}/>`);
         <div class="field"><label for="mediaAudience">Audience reach (optional)</label><input type="text" id="mediaAudience" maxlength="120" placeholder="e.g. 12,000 followers"></div>
         <div class="field"><label for="mediaWhy">How would you like to partner with TSA?</label><textarea id="mediaWhy" required maxlength="1200" placeholder="Tell us how you would cover our events and support our projects…"></textarea></div>
         <input type="text" id="mediaHp" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;opacity:0;height:0;width:0;">
-        <label class="media-check"><input type="checkbox" id="mediaAgree" required><span>I understand this is a request for a <b>permanent</b> media partnership and that TSA may contact me.</span></label>
-        <button type="submit" class="btn btn-gold btn-wide" id="mediaSubmitBtn">Submit Media Partner Application</button>
+        <label class="media-check"><input type="checkbox" id="mediaAgree" required><span>I understand that once we avail this partnership, it is a <b>mutual commitment of both organizations</b> for the whole term I selected.</span></label>
+        <button type="submit" class="btn btn-gold btn-wide" id="mediaSubmitBtn">Send Application</button>
+        <p class="media-fallback" id="mediaFallback" style="display:none;">Could not send automatically. <a id="mediaMailto" href="#">Send it from your own email app instead</a>.</p>
       </form>
     </div>
     <div id="mediaConfirm" style="display:none;">
       <div class="confirm-block">
         <div class="big-seal">✓</div>
-        <h3 style="margin-bottom:0.4rem;">Application Received</h3>
-        <p class="modal-sub" style="margin-bottom:1.4rem;">Thank you. Your details were saved in the TSA system. The External Affairs Committee will review them and contact you by email.</p>
+        <h3 style="margin-bottom:0.4rem;">Application Sent</h3>
+        <p class="modal-sub" style="margin-bottom:1.4rem;">Thank you. Your application was emailed to the TSA External Affairs Committee. They will review it and reply to your email.</p>
         <button class="btn btn-gold btn-wide" onclick="closeModal('media')">Close</button>
       </div>
     </div>
@@ -3174,7 +3326,7 @@ window.signInWithGoogle=async()=>{
     $("partnerAdminTools").style.display=currentProfile?.role==="admin"?"block":"none";
     wrap.innerHTML=list.length?list.map(partnerCardHTML).join(""):'<p class="empty-note">No partner organizations match your search.</p>';
   };
-  function partnerCardHTML(p){return `<div class="partner-card"><h3>${esc(p.name)}</h3>${p.partnerType==="Media Partner"?'<div class="task-meta"><span class="meta-chip">MEDIA PARTNER</span><span class="meta-chip">Permanent</span></div>':""}<p>${esc(p.contact||"")}${p.contact&&p.email?" · ":""}${esc(p.email||"")}</p>${p.phone?`<p>${esc(p.phone)}</p>`:""}${p.notes?`<p class="partner-notes">${esc(p.notes)}</p>`:""}<div class="partner-actions"><button class="btn btn-ghost btn-sm" onclick="copyPartner('${esc(p.id)}')">Copy Info</button>${currentProfile?.role==="admin"?`<button class="btn btn-ghost btn-sm" onclick="editPartner('${esc(p.id)}')">Edit</button><button class="btn btn-ghost btn-sm" onclick="deletePartner('${esc(p.id)}')">Delete</button>`:""}</div></div>`;}
+  function partnerCardHTML(p){return `<div class="partner-card"><h3>${esc(p.name)}</h3><p>${esc(p.contact||"")}${p.contact&&p.email?" · ":""}${esc(p.email||"")}</p>${p.phone?`<p>${esc(p.phone)}</p>`:""}${p.notes?`<p class="partner-notes">${esc(p.notes)}</p>`:""}<div class="partner-actions"><button class="btn btn-ghost btn-sm" onclick="copyPartner('${esc(p.id)}')">Copy Info</button>${currentProfile?.role==="admin"?`<button class="btn btn-ghost btn-sm" onclick="editPartner('${esc(p.id)}')">Edit</button><button class="btn btn-ghost btn-sm" onclick="deletePartner('${esc(p.id)}')">Delete</button>`:""}</div></div>`;}
   window.copyPartner=async id=>{const p=realtime.partners.find(x=>x.id===id);if(!p)return;try{await navigator.clipboard.writeText([p.name,p.contact,p.email,p.phone,p.notes].filter(Boolean).join("\n"));showToast("Copied to clipboard.");}catch(e){showToast("Could not copy.","error");}};
   window.editPartner=async id=>{const p=realtime.partners.find(x=>x.id===id);if(!p)return;$("partnerEditId").value=p.id;$("partnerName").value=p.name||"";$("partnerContact").value=p.contact||"";$("partnerEmail").value=p.email||"";$("partnerPhone").value=p.phone||"";$("partnerNotes").value=p.notes||"";$("partnerSaveBtn").textContent="Save Changes";$("partnerForm").style.display="block";};
   window.savePartnerForm=async()=>{if(currentProfile?.role!=="admin")return;const name=$("partnerName").value.trim();if(!name){$("partnerFormMsg").textContent="Organization name is required.";return;}const id=$("partnerEditId").value;const data={name,contact:$("partnerContact").value.trim(),email:$("partnerEmail").value.trim(),phone:$("partnerPhone").value.trim(),notes:$("partnerNotes").value.trim(),updatedAt:serverTimestamp()};if(id)await updateDoc(doc(db,"partners",id),data);else await addDoc(collection(db,"partners"),{...data,createdAt:serverTimestamp()});["partnerEditId","partnerName","partnerContact","partnerEmail","partnerPhone","partnerNotes"].forEach(i=>$(i).value="");$("partnerForm").style.display="none";showToast("Partner saved.");};
@@ -3361,11 +3513,6 @@ window.signInWithGoogle=async()=>{
   // ---------- Applications ----------
   window.renderApplications=()=>{if(currentProfile?.role!=="admin")return;const q=($("applicationSearch")?.value||"").trim().toLowerCase();const list=realtime.applications.filter(a=>!q||((a.name||"")+" "+(a.organization||"")).toLowerCase().includes(q)||(a.email||"").toLowerCase().includes(q));$("applicationsList").innerHTML=list.length?list.map(a=>applicationCardHTML(a)).join(""):'<p class="empty-note">No applications yet.</p>';const pending=list.filter(a=>a.status==="pending").length;updateBadge("applicationBadge",pending);};
   function applicationCardHTML(a){
-    if(a.type==="media_partner"){
-      const url=a.website?(/^https?:\/\//i.test(a.website)?a.website:"https://"+a.website):"";
-      const link=url?`<a href="${esc(url)}" target="_blank" rel="noopener">${esc(a.website)}</a>`:"—";
-      return `<div class="application-card"><div class="task-top"><h3>${esc(a.organization||a.name)}</h3><span class="status-badge ${a.status==="accepted"?"st-approved":"st-pending"}">${esc(a.status)}</span></div><div class="task-meta"><span class="meta-chip">MEDIA PARTNER</span><span class="meta-chip">${esc(a.mediaType||"Media")}</span><span class="meta-chip">Permanent</span></div><p><strong>Contact:</strong> ${esc(a.name||"—")}${a.position?" · "+esc(a.position):""}</p><p><strong>Email:</strong> ${esc(a.email)}${a.phone?" · "+esc(a.phone):""}</p><p><strong>Link:</strong> ${link}</p>${a.audience?`<p><strong>Audience:</strong> ${esc(a.audience)}</p>`:""}<p><strong>Proposal:</strong> ${esc(a.why||"—")}</p>${a.status==="pending"?`<div class="application-actions"><button class="btn btn-gold btn-sm" onclick="acceptMediaPartner('${esc(a.id)}')">Approve as Permanent Media Partner</button><button class="btn btn-ghost btn-sm" onclick="declineApplication('${esc(a.id)}')">Decline</button></div>`:""}</div>`;
-    }
     return `<div class="application-card"><div class="task-top"><h3>${esc(a.name||a.email)}</h3><span class="status-badge ${a.status==="accepted"?"st-approved":"st-pending"}">${esc(a.status)}</span></div><p><strong>Email:</strong> ${esc(a.email)}</p><p><strong>Year & course:</strong> ${esc(a.course||"—")}</p><p><strong>Why:</strong> ${esc(a.why||"—")}</p>${a.status==="pending"?`<div class="application-actions"><button class="btn btn-gold btn-sm" onclick="acceptApplication('${esc(a.id)}')">Accept & Add to Roster</button><button class="btn btn-ghost btn-sm" onclick="declineApplication('${esc(a.id)}')">Decline</button></div>`:""}</div>`;}
   window.acceptApplication=async id=>{if(currentProfile?.role!=="admin")return;const a=realtime.applications.find(x=>x.id===id);if(!a)return;await setDoc(doc(db,"roster",emailKey(a.email)),{email:a.email,name:a.name||"",role:"member",active:true,course:a.course||"",createdAt:serverTimestamp(),createdBy:currentUser.uid},{merge:true});await updateDoc(doc(db,"applications",id),{status:"accepted",reviewedBy:currentUser.uid,reviewedAt:serverTimestamp()});showToast("Applicant accepted and added to the roster.");};
   window.declineApplication=async id=>{if(currentProfile?.role!=="admin")return;if(confirm("Decline this membership application?")){await updateDoc(doc(db,"applications",id),{status:"declined",reviewedBy:currentUser.uid,reviewedAt:serverTimestamp()});showToast("Application declined.");}};
@@ -3413,30 +3560,34 @@ window.signInWithGoogle=async()=>{
 
 
   // ---------- Media partner applications (from the welcome page) ----------
-  window.resetMedia=()=>{const f=$("mediaFormWrap"),c=$("mediaConfirm");if(f)f.style.display="block";if(c)c.style.display="none";};
+  // Sent by email to the External Affairs Committee. Nothing is written to Firebase:
+  // admins record approved partners in the system themselves (Partners tab).
+  const MEDIA_INBOX="tsa.externalcommittee@gmail.com";
+  window.resetMedia=()=>{const f=$("mediaFormWrap"),c=$("mediaConfirm"),fb=$("mediaFallback");if(f)f.style.display="block";if(c)c.style.display="none";if(fb)fb.style.display="none";};
+  function mediaMessage(d){
+    return `New Media Partner Application (TSA External Affairs)\n\nOrganization: ${d.org}\nPartnership term requested: ${d.term}\nAcknowledged: once availed, the partnership is mutual and applies to both organizations for the whole term.\n\nContact person: ${d.contact} (${d.role})\nEmail: ${d.email}\nPhone / Messenger: ${d.phone||"-"}\nWebsite / social page: ${d.link}\nAudience reach: ${d.audience||"-"}\n\nHow they would like to partner:\n${d.why}\n\nSent from the TSA External website on ${new Date().toLocaleString()}.\nReply directly to the applicant at ${d.email}.`;
+  }
   window.handleMediaApply=async e=>{
     e.preventDefault();
-    if(!firebaseConfigured){showToast("Firebase is not configured.","error");return;}
-    if(($("mediaHp")?.value||"").trim()){$("mediaFormWrap").style.display="none";$("mediaConfirm").style.display="block";return;}
     const g=id=>($(id)?.value||"").trim(),btn=$("mediaSubmitBtn");
+    if(g("mediaHp")){$("mediaFormWrap").style.display="none";$("mediaConfirm").style.display="block";return;}
+    try{const last=Number(localStorage.getItem("tsaMediaLast")||0);if(Date.now()-last<60000){showToast("Please wait a minute before sending another application.","error");return;}}catch(_){}
+    const d={org:g("mediaOrg"),term:g("mediaTerm"),contact:g("mediaContact"),role:g("mediaRole"),email:g("mediaEmail"),phone:g("mediaPhone"),link:g("mediaLink"),audience:g("mediaAudience"),why:g("mediaWhy")};
+    const subject=`[TSA Media Partner] ${d.org} - ${d.term}`,message=mediaMessage(d);
     if(btn){btn.disabled=true;btn.textContent="Sending…";}
-    const application={type:"media_partner",organization:g("mediaOrg"),mediaType:g("mediaType"),name:g("mediaContact"),position:g("mediaRole"),email:g("mediaEmail").toLowerCase(),phone:g("mediaPhone"),website:g("mediaLink"),audience:g("mediaAudience"),why:g("mediaWhy"),permanent:true,status:"pending",submittedAt:serverTimestamp()};
     try{
-      await addDoc(collection(db,"applications"),application);
+      if(!window.emailjs) throw new Error("Email service failed to load.");
+      await emailjs.send(EMAILJS_SERVICE_ID,EMAILJS_TEMPLATE_ID,{to_email:MEDIA_INBOX,subject,message,reply_to:d.email});
+      try{localStorage.setItem("tsaMediaLast",String(Date.now()));}catch(_){}
       $("mediaForm").reset();$("mediaFormWrap").style.display="none";$("mediaConfirm").style.display="block";
-      showToast("Media partner application submitted.");
-    }catch(err){console.error(err);showToast("Could not send your application. Please try again.","error");}
-    finally{if(btn){btn.disabled=false;btn.textContent="Submit Media Partner Application";}}
-  };
-  window.acceptMediaPartner=async id=>{
-    if(currentProfile?.role!=="admin")return;
-    const a=realtime.applications.find(x=>x.id===id);if(!a||a.status!=="pending")return;
-    const notes=[`Media partner · ${a.mediaType||"Media"}`,a.website?`Link: ${a.website}`:"",a.audience?`Audience: ${a.audience}`:"",a.why?`Proposal: ${a.why}`:""].filter(Boolean).join("\n");
-    try{
-      await addDoc(collection(db,"partners"),{name:a.organization||a.name,contact:[a.name,a.position].filter(Boolean).join(", "),email:a.email||"",phone:a.phone||"",notes,partnerType:"Media Partner",permanent:true,website:a.website||"",source:"media_application",applicationId:id,createdAt:serverTimestamp(),updatedAt:serverTimestamp(),createdBy:currentUser.uid});
-      await updateDoc(doc(db,"applications",id),{status:"accepted",reviewedBy:currentUser.uid,reviewedAt:serverTimestamp()});
-      showToast("Added as a permanent media partner.");
-    }catch(err){console.error(err);showToast("Could not add the partner. Try again.","error");}
+      showToast("Application sent to the committee.");
+    }catch(err){
+      console.error(err);
+      const fb=$("mediaFallback"),a=$("mediaMailto");
+      if(a) a.href=`mailto:${MEDIA_INBOX}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(message)}`;
+      if(fb) fb.style.display="block";
+      showToast("Could not send automatically. Use the email link below the button.","error");
+    }finally{if(btn){btn.disabled=false;btn.textContent="Send Application";}}
   };
 
   // ---------- Applications from landing ----------
@@ -4535,7 +4686,7 @@ void main() {
     if(hp.offsetHeight){
       ctx.clearRect(0,0,w,h);var dc=document.querySelector('.dash-content'),sy=Math.max(window.scrollY,dc?dc.scrollTop:0),P=[],i,j,s,y,a;
       for(i=0;i<stars.length;i++){s=stars[i];y=(((s.y-sy*s.z*.35)%H)+H)%H;if(y>h+10)continue;
-        a=.55+.45*Math.sin(t*s.v+s.p);ctx.fillStyle=s.b?'#FFF1E3':'#FF7A1A';
+        a=.55+.45*Math.sin(t*s.v+s.p);ctx.fillStyle=s.b?'#C2410C':'#FF7A1A';
         if(s.b)spark(s.x,y,8+s.r*3,a);else{ctx.globalAlpha=a;ctx.beginPath();ctx.arc(s.x,y,s.r,0,6.3);ctx.fill();}
         if(s.l)P.push([s.x,y]);}
       ctx.lineWidth=.8;ctx.strokeStyle='#FF7A1A';
@@ -4543,10 +4694,10 @@ void main() {
         for(j=i+1;j<P.length;j++){var d=Math.hypot(P[i][0]-P[j][0],P[i][1]-P[j][1]);
           if(d<125){ctx.globalAlpha=(1-d/125)*.4;ctx.beginPath();ctx.moveTo(P[i][0],P[i][1]);ctx.lineTo(P[j][0],P[j][1]);ctx.stroke();}}
         var dm=Math.hypot(P[i][0]-m.x,P[i][1]-m.y);
-        if(dm<170){ctx.globalAlpha=(1-dm/170)*.85;ctx.strokeStyle='#FFF1E3';ctx.beginPath();ctx.moveTo(P[i][0],P[i][1]);ctx.lineTo(m.x,m.y);ctx.stroke();ctx.strokeStyle='#FF7A1A';}}
+        if(dm<170){ctx.globalAlpha=(1-dm/170)*.85;ctx.strokeStyle='#C2410C';ctx.beginPath();ctx.moveTo(P[i][0],P[i][1]);ctx.lineTo(m.x,m.y);ctx.stroke();ctx.strokeStyle='#FF7A1A';}}
       if(!sh&&Math.random()<.003)sh={x:Math.random()*w*.8+w*.2,y:Math.random()*h*.4,l:0};
       if(sh){sh.x-=9;sh.y+=4.5;sh.l++;var g=ctx.createLinearGradient(sh.x,sh.y,sh.x+90,sh.y-45);
-        g.addColorStop(0,'rgba(255,241,227,.9)');g.addColorStop(1,'rgba(255,241,227,0)');
+        g.addColorStop(0,'rgba(194,65,12,.9)');g.addColorStop(1,'rgba(194,65,12,0)');
         ctx.globalAlpha=1;ctx.strokeStyle=g;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(sh.x,sh.y);ctx.lineTo(sh.x+90,sh.y-45);ctx.stroke();if(sh.l>70)sh=null;}
       ctx.globalAlpha=1;
     }
