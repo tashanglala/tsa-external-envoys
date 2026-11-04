@@ -9,3 +9,5 @@ firebase-debug.log
 # Editor/OS junk
 .DS_Store
 Thumbs.db
+.vercel
+.env*
