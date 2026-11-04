@@ -2160,7 +2160,7 @@ function Nav({s}){
   return html`<nav className=${s>20?'s':''}><div className=&quot;wrap nv&quot;>
     <a href=&quot;#top&quot; className=&quot;logo&quot;><i className=&quot;lg&quot; aria-hidden=&quot;true&quot;></i><span><small>Bicol University · Polangui</small>TSA External</span></a>
     <div className=&quot;links&quot;><a href=&quot;#what&quot;>What we do</a><a href=&quot;#how&quot;>How we work</a><a href=&quot;#media&quot;>Media partners</a><a href=&quot;#team&quot;>Committee</a><a href=&quot;#faq&quot;>Join</a></div>
-    <div className=&quot;act&quot;><button className=&quot;btn g&quot; onClick=${()=>go('login')}>Member Login</button><button className=&quot;btn p&quot; onClick=${()=>go('apply')}>Apply Now</button></div>
+    <div className=&quot;act&quot;><button className=&quot;btn g&quot; onClick=${()=>go('login')}>Member Login</button><button className=&quot;btn p&quot; onClick=${()=>go('media')}>Media Partner</button></div>
   </div></nav>`;
 }
 
@@ -2174,7 +2174,7 @@ function Hero({y}){
         <span className=&quot;tag&quot; style=${{animation:'fade .8s both'}}>External Affairs Committee</span>
         <h1><${Words} t=&quot;The External Envoys&quot; hl=${2}/></h1>
         <p className=&quot;lead&quot;>Representing the TechSystems Association beyond campus walls. We build institutional bridges, secure bilateral MOAs, and forge lasting alliances across universities and the tech industry.</p>
-        <div className='ctas'><button className='btn p' onClick=${()=>go('apply')}>Apply to External Affairs →</button><button className='btn g' onClick=${()=>go('media')}>Become a Media Partner</button></div>
+        <div className='ctas'><button className='btn p' onClick=${()=>go('media')}>Become a Media Partner</button><button className='btn g' onClick=${()=>go('login')}>Member Login</button></div>
       </div>
       <div className=&quot;vis&quot;>
         <div className=&quot;big&quot; style=${px(.06)}><svg viewBox=&quot;0 0 300 300&quot; fill=&quot;none&quot; strokeLinecap=&quot;round&quot; strokeLinejoin=&quot;round&quot;><defs><linearGradient id=&quot;gl&quot; x1=&quot;0&quot; y1=&quot;0&quot; x2=&quot;0&quot; y2=&quot;1&quot;><stop offset=&quot;0&quot; stopColor=&quot;#FFD7B0&quot;/><stop offset=&quot;1&quot; stopColor=&quot;#FF7A1A&quot;/></linearGradient></defs>
@@ -2304,7 +2304,7 @@ function Cta(){
   return html`<section style=${{paddingBottom:'5rem'}}><div className=&quot;wrap&quot;><${Reveal} y=${50}><div className=&quot;cta&quot;>
     <h2>Ready to be an envoy?</h2>
     <p>Applications are reviewed by the External Affairs Committee. Start yours today.</p>
-    <div className=&quot;ctas&quot;><button className=&quot;btn d&quot; onClick=${()=>go('apply')}>Apply Now →</button><button className=&quot;btn g&quot; onClick=${()=>go('media')}>Media Partner</button><button className=&quot;btn g&quot; onClick=${()=>go('login')}>Member Login</button></div>
+    <div className=&quot;ctas&quot;><button className=&quot;btn g&quot; onClick=${()=>go('media')}>Media Partner</button><button className=&quot;btn g&quot; onClick=${()=>go('login')}>Member Login</button></div>
   </div><//></div></section>`;
 }
 
